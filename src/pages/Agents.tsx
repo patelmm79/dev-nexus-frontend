@@ -51,7 +51,7 @@ export default function Agents() {
         </Box>
       ) : (
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 3, mt: 2 }}>
-          {data?.agents.map((agent) => (
+          {Array.isArray(data?.agents) ? data.agents.map((agent) => (
             <Card key={agent.name}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -80,11 +80,11 @@ export default function Agents() {
                 </Typography>
               </CardContent>
             </Card>
-          ))}
+          )) : null}
         </Box>
       )}
 
-      {!isLoading && (!data?.agents || data.agents.length === 0) && (
+      {!isLoading && (!Array.isArray(data?.agents) || data.agents.length === 0) && (
         <Box sx={{ mt: 4, textAlign: 'center' }}>
           <Typography variant="h6" color="text.secondary">
             No external agents configured
