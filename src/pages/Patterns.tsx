@@ -17,7 +17,7 @@ export default function Patterns() {
   const [searchTerm, setSearchTerm] = useState('');
   const { data, isLoading, isError, error } = useCrossRepoPatterns();
 
-  const filteredPatterns = data?.patterns.filter(pattern =>
+  const filteredPatterns = data?.patterns?.filter(pattern =>
     pattern.pattern_name.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
