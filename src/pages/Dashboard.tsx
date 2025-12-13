@@ -14,7 +14,9 @@ export default function Dashboard() {
   const { data: patterns, isLoading: patternsLoading } = useCrossRepoPatterns();
   const { data: agents, isLoading: agentsLoading } = useExternalAgents();
 
-  const healthyAgents = agents?.agents.filter(a => a.status === 'healthy').length || 0;
+  const healthyAgents = Array.isArray(agents?.agents)
+    ? agents!.agents.filter(a => a.status === 'healthy').length
+    : 0;
 
   return (
     <Box>
@@ -52,7 +54,7 @@ export default function Dashboard() {
 
         <StatCard
           title="Connected Agents"
-          value={`${healthyAgents}/${agents?.agents.length || 0}`}
+          value={`${healthyAgents}/${Array.isArray(agents?.agents) ? agents!.agents.length : 0}`}
           icon={<Hub />}
           color="info"
           loading={agentsLoading}
