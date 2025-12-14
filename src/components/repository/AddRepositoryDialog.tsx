@@ -58,13 +58,22 @@ export default function AddRepositoryDialog({ open, onClose }: Props) {
             value={repository}
             onChange={(e) => setRepository(e.target.value)}
             disabled={mutation.status === 'pending' || mutation.status === 'success'}
-            helperText={mutation.status === 'error' ? (mutation.error as Error)?.message ?? '' : ''}
+            helperText={
+              mutation.status === 'error'
+                ? ( (mutation.error as any)?.response?.data?.error ?? (mutation.error as Error)?.message ?? '' )
+                : ''
+            }
             error={mutation.status === 'error'}
           />
 
           {mutation.status === 'success' && mutation.data?.message ? (
             <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
               {mutation.data.message}
+            </Typography>
+          ) : null}
+          {mutation.status === 'error' && (mutation.error as any)?.response?.data?.available_skills ? (
+            <Typography variant="caption" color="textSecondary" sx={{ mt: 1 }}>
+              Available skills: {(mutation.error as any).response.data.available_skills.join(', ')}
             </Typography>
           ) : null}
         </DialogContent>

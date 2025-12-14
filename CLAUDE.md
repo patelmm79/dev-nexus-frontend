@@ -171,7 +171,7 @@ Ensure backend has CORS configured for `http://localhost:5173`
 ### Connecting to Production Backend
 Update `.env.production`:
 ```env
-VITE_API_BASE_URL=https://your-cloud-run-service.run.app
+VITE_API_BASE_URL=https://pattern-discovery-agent-665374072631.us-central1.run.app
 ```
 Ensure backend CORS includes your Vercel/Netlify domain
 

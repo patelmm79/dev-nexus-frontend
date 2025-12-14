@@ -111,7 +111,7 @@ VITE_ENV=development
 Create `.env.production`:
 
 ```env
-VITE_API_BASE_URL=https://your-cloud-run-service.run.app
+VITE_API_BASE_URL=https://pattern-discovery-agent-665374072631.us-central1.run.app
 VITE_API_TIMEOUT=30000
 VITE_ENV=production
 ```
@@ -413,7 +413,7 @@ Configuration in `vercel.json`:
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "env": {
-    "VITE_API_BASE_URL": "https://your-cloud-run-service.run.app"
+    "VITE_API_BASE_URL": "https://pattern-discovery-agent-665374072631.us-central1.run.app"
   }
 }
 ```

@@ -158,8 +158,18 @@ export function useAddRepository() {
         queryClient.invalidateQueries({ queryKey: ['repositories'] });
       }, 3000);
     },
-    onError: (error: Error) => {
-      toast.error(`Failed to add repository: ${error.message}`);
+    onError: (error: any) => {
+      // If backend returned a structured error, show it and list available skills
+      const serverErr = error?.response?.data;
+      if (serverErr) {
+        const msg = serverErr.error || serverErr.message || JSON.stringify(serverErr);
+        const skills = serverErr.available_skills;
+        const skillMsg = Array.isArray(skills) && skills.length ? ` Available skills: ${skills.join(', ')}` : '';
+        toast.error(`Failed to add repository: ${msg}${skillMsg}`);
+        return;
+      }
+
+      toast.error(`Failed to add repository: ${error?.message ?? String(error)}`);
     },
   });
 }
