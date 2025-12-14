@@ -7,6 +7,7 @@ import {
   TextField,
   Button,
   CircularProgress,
+  Typography,
 } from '@mui/material';
 import { useAddRepository } from '../../hooks/usePatterns';
 
@@ -26,15 +27,20 @@ export default function AddRepositoryDialog({ open, onClose }: Props) {
   }, [open]);
 
   useEffect(() => {
-    if (mutation.isSuccess) {
-      onClose();
+    if (mutation.status === 'success') {
+      // Auto-close shortly after success so user can read the backend message
+      const t = setTimeout(() => {
+        onClose();
+        mutation.reset?.();
+      }, 1200);
+      return () => clearTimeout(t);
     }
-  }, [mutation.isSuccess, onClose]);
+  }, [mutation.status, mutation, onClose]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!repository) return;
-    mutation.mutate(repository);
+    mutation.mutate(repository.trim());
   };
 
   return (
@@ -51,19 +57,31 @@ export default function AddRepositoryDialog({ open, onClose }: Props) {
             variant="outlined"
             value={repository}
             onChange={(e) => setRepository(e.target.value)}
-            disabled={mutation.status === 'pending'}
-            helperText={mutation.isError ? (mutation.error as Error).message : ''}
-            error={mutation.isError}
+            disabled={mutation.status === 'pending' || mutation.status === 'success'}
+            helperText={mutation.status === 'error' ? (mutation.error as Error)?.message ?? '' : ''}
+            error={mutation.status === 'error'}
           />
+
+          {mutation.status === 'success' && mutation.data?.message ? (
+            <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+              {mutation.data.message}
+            </Typography>
+          ) : null}
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose} disabled={mutation.status === 'pending'}>
+          <Button
+            onClick={() => {
+              mutation.reset?.();
+              onClose();
+            }}
+            disabled={mutation.status === 'pending'}
+          >
             Cancel
           </Button>
           <Button
             type="submit"
             variant="contained"
-            disabled={mutation.status === 'pending' || repository.trim() === ''}
+            disabled={mutation.status === 'pending' || repository.trim() === '' || mutation.status === 'success'}
           >
             {mutation.status === 'pending' ? <CircularProgress size={20} /> : 'Add'}
           </Button>
