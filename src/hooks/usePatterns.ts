@@ -135,3 +135,21 @@ export function useUpdateDependency() {
     },
   });
 }
+
+/**
+ * Mutation hook to add a repository
+ */
+export function useAddRepository() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (repository: string) => a2aClient.addRepository(repository),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      toast.success('Repository added successfully!');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to add repository: ${error.message}`);
+    },
+  });
+}

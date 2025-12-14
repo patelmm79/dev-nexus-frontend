@@ -384,6 +384,19 @@ class A2AClient {
     });
     return response.data;
   }
+
+  /**
+   * Add a repository to be tracked by the system (requires authentication)
+   */
+  async addRepository(repository: string): Promise<{ success: boolean; message: string }> {
+    const response = await this.client.post('/a2a/execute', {
+      skill_id: 'add_repository',
+      input: {
+        repository,
+      },
+    });
+    return response.data;
+  }
 }
 
 // ============================================

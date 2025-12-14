@@ -6,6 +6,7 @@ import {
   CssBaseline,
   Drawer,
   IconButton,
+  Button,
   List,
   ListItem,
   ListItemButton,
@@ -25,6 +26,7 @@ import {
   Hub as AgentsIcon,
 } from '@mui/icons-material';
 import HealthIndicator from '../common/HealthIndicator';
+import AddRepositoryDialog from '../repository/AddRepositoryDialog';
 
 const drawerWidth = 240;
 
@@ -39,6 +41,7 @@ const menuItems = [
 
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -95,6 +98,14 @@ export default function Layout() {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Pattern Discovery Agent
           </Typography>
+          <Button
+            color="inherit"
+            variant="outlined"
+            sx={{ mr: 2, textTransform: 'none' }}
+            onClick={() => setAddDialogOpen(true)}
+          >
+            Add
+          </Button>
           <HealthIndicator />
         </Toolbar>
       </AppBar>
@@ -136,6 +147,7 @@ export default function Layout() {
           mt: 8,
         }}
       >
+        <AddRepositoryDialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} />
         <Outlet />
       </Box>
     </Box>
