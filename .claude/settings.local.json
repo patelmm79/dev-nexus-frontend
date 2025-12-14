@@ -7,7 +7,9 @@
       "Bash(npm install:*)",
       "Bash(npm run type-check:*)",
       "Bash(npm run dev:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nBuild complete React frontend application with Vite, TypeScript, and Material-UI\n\nImplemented a full-featured Pattern Discovery Agent frontend that connects to the A2A backend:\n\n- Set up Vite + React 18 + TypeScript project structure\n- Installed core dependencies: React Router, TanStack Query, MUI, axios, zustand, recharts\n- Created comprehensive A2A API client with full TypeScript types for all endpoints\n- Implemented React Query hooks for data fetching and mutations\n- Built responsive layout with sidebar navigation and Material-UI theme\n- Created six main pages: Dashboard, Repositories, Patterns, Configuration, Deployment, Agents\n- Added real-time API health monitoring and toast notifications\n- Configured environment variables for development and production\n- Added ESLint, TypeScript, and Vite configuration files\n- Created CLAUDE.md for future AI assistant context\n\nThe application is fully functional and ready for development/deployment.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)"
     ]
   }
 }
