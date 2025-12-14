@@ -389,10 +389,21 @@ class A2AClient {
    * Add a repository to be tracked by the system (requires authentication)
    */
   async addRepository(repository: string): Promise<{ success: boolean; message: string }> {
+    // The backend `add_deployment_info` skill expects a `deployment_info` object.
+    // Provide a minimal/empty deployment_info structure so the call validates.
+    const minimalDeploymentInfo = {
+      scripts: [],
+      lessons_learned: [],
+      reusable_components: [],
+      ci_cd_platform: '',
+      infrastructure: {},
+    } as DeploymentInfo;
+
     const response = await this.client.post('/a2a/execute', {
-      skill_id: 'add_repository',
+      skill_id: 'add_deployment_info',
       input: {
         repository,
+        deployment_info: minimalDeploymentInfo,
       },
     });
     return response.data;
