@@ -144,9 +144,19 @@ export function useAddRepository() {
 
   return useMutation({
     mutationFn: (repository: string) => a2aClient.addRepository(repository),
-    onSuccess: () => {
+    onSuccess: (data: { success: boolean; message?: string }) => {
+      // Show backend-provided message when available
+      if (data && data.message) {
+        toast.success(data.message);
+      } else {
+        toast.success('Repository added successfully!');
+      }
+
+      // Invalidate repository list immediately, then refetch again after a short delay
       queryClient.invalidateQueries({ queryKey: ['repositories'] });
-      toast.success('Repository added successfully!');
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      }, 3000);
     },
     onError: (error: Error) => {
       toast.error(`Failed to add repository: ${error.message}`);
