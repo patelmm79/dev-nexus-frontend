@@ -51,21 +51,21 @@ export default function AddRepositoryDialog({ open, onClose }: Props) {
             variant="outlined"
             value={repository}
             onChange={(e) => setRepository(e.target.value)}
-            disabled={mutation.isLoading}
+            disabled={mutation.status === 'pending'}
             helperText={mutation.isError ? (mutation.error as Error).message : ''}
             error={mutation.isError}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose} disabled={mutation.isLoading}>
+          <Button onClick={onClose} disabled={mutation.status === 'pending'}>
             Cancel
           </Button>
           <Button
             type="submit"
             variant="contained"
-            disabled={mutation.isLoading || repository.trim() === ''}
+            disabled={mutation.status === 'pending' || repository.trim() === ''}
           >
-            {mutation.isLoading ? <CircularProgress size={20} /> : 'Add'}
+            {mutation.status === 'pending' ? <CircularProgress size={20} /> : 'Add'}
           </Button>
         </DialogActions>
       </form>
