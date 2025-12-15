@@ -165,7 +165,8 @@ export interface ExternalAgent {
 
 export interface HealthCheckExternalResponse {
   success: boolean;
-  agents: ExternalAgent[];
+    // Backend may return either an array of ExternalAgent or an object map { name: boolean }
+    agents: ExternalAgent[];
 }
 
 export interface DocumentationStandard {
@@ -323,11 +324,55 @@ class A2AClient {
    * Check health of external agents
    */
   async healthCheckExternal(): Promise<HealthCheckExternalResponse> {
-    const response = await this.client.post<HealthCheckExternalResponse>('/a2a/execute', {
+    const response = await this.client.post('/a2a/execute', {
       skill_id: 'health_check_external',
       input: {},
     });
-    return response.data;
+
+    const data = response.data as any;
+
+    // Normalize agents to an array of ExternalAgent
+    let agents: ExternalAgent[] = [];
+
+    if (Array.isArray(data?.agents)) {
+      agents = data.agents as ExternalAgent[];
+    } else if (data && typeof data.agents === 'object' && data.agents !== null) {
+      // Example shape: { "dependency-orchestrator": false }
+      agents = Object.entries(data.agents).map(([name, val]) => {
+        // If val is boolean, interpret as healthy/unhealthy
+        if (typeof val === 'boolean') {
+          return {
+            name,
+            url: '',
+            status: val ? 'healthy' : 'unhealthy',
+            last_checked: new Date().toISOString(),
+          } as ExternalAgent;
+        }
+
+        // If val is an object with more details, try to map fields
+        if (typeof val === 'object' && val !== null) {
+          return {
+            name,
+            url: (val as any).url || '',
+            status: (val as any).status || ((val as any).healthy ? 'healthy' : 'unhealthy'),
+            last_checked: (val as any).last_checked || new Date().toISOString(),
+          } as ExternalAgent;
+        }
+
+        // Fallback
+        return {
+          name,
+          url: '',
+          status: 'unknown',
+          last_checked: new Date().toISOString(),
+        } as ExternalAgent;
+      });
+    }
+
+    return {
+      success: Boolean(data?.success),
+      agents,
+    };
   }
 
   /**
