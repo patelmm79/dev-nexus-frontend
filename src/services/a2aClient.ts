@@ -453,6 +453,17 @@ class A2AClient {
     });
     return response.data;
   }
+
+  /**
+   * Execute an arbitrary A2A skill by id with optional input
+   */
+  async executeSkill(skillId: string, input: Record<string, any> = {}): Promise<any> {
+    const response = await this.client.post('/a2a/execute', {
+      skill_id: skillId,
+      input,
+    });
+    return response.data;
+  }
 }
 
 // ============================================
