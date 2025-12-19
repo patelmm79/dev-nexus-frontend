@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import Layout from './components/layout/Layout';
@@ -7,6 +8,8 @@ import Patterns from './pages/Patterns';
 import Configuration from './pages/Configuration';
 import Deployment from './pages/Deployment';
 import Agents from './pages/Agents';
+import Compliance from './pages/Compliance';
+import { a2aClient } from './services/a2aClient';
 
 const theme = createTheme({
   palette: {
@@ -32,6 +35,24 @@ const theme = createTheme({
 });
 
 function App() {
+  // Initialize API client with saved configuration on app startup
+  useEffect(() => {
+    const saved = localStorage.getItem('app-config');
+    if (saved) {
+      try {
+        const config = JSON.parse(saved);
+        if (config.apiUrl) {
+          a2aClient.setBaseUrl(config.apiUrl);
+        }
+        if (config.authToken) {
+          a2aClient.setAuthToken(config.authToken);
+        }
+      } catch (e) {
+        console.error('Failed to load saved configuration:', e);
+      }
+    }
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -43,6 +64,7 @@ function App() {
           <Route path="configuration" element={<Configuration />} />
           <Route path="deployment" element={<Deployment />} />
           <Route path="agents" element={<Agents />} />
+          <Route path="compliance" element={<Compliance />} />
         </Route>
       </Routes>
     </ThemeProvider>

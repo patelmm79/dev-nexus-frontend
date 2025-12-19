@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import { SkillExecutionResponse, AgentCard } from '../types/agents';
 
 // ============================================
 // TypeScript Types
@@ -13,36 +14,7 @@ export interface HealthResponse {
   skills: string[];
 }
 
-export interface AgentCard {
-  name: string;
-  description: string;
-  version: string;
-  url: string;
-  capabilities: {
-    streaming: boolean;
-    multimodal: boolean;
-    authentication: string;
-  };
-  skills: Skill[];
-  metadata: {
-    repository: string;
-    documentation: string;
-    authentication_note: string;
-    knowledge_base: string;
-    external_agents: Record<string, string>;
-    architecture: string;
-    skill_count: number;
-  };
-}
-
-export interface Skill {
-  id: string;
-  name: string;
-  description: string;
-  input_schema: Record<string, any>;
-  output_schema: Record<string, any>;
-  authentication: string;
-}
+// `Skill` and `AgentCard` types are imported from `src/types/agents.ts`
 
 export interface Pattern {
   name: string;
@@ -191,6 +163,75 @@ export interface CheckDocumentationStandardsResponse {
 }
 
 // ============================================
+// Compliance & Architecture Validation Types
+// ============================================
+
+export interface ComplianceViolation {
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  rule_id: string;
+  message: string;
+  recommendation: string;
+  file_path?: string;
+}
+
+export interface ComplianceCategory {
+  compliance_score: number;
+  passed: boolean;
+  checks_performed: number;
+  violations: ComplianceViolation[];
+}
+
+export interface ComplianceSummary {
+  total_checks: number;
+  passed_checks: number;
+  failed_checks: number;
+  critical_violations: number;
+}
+
+export interface ComplianceRecommendation {
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  estimated_effort?: string;
+  impact?: string;
+}
+
+export interface A2AIntegrationStatus {
+  monitoring?: { status: 'success' | 'skipped' | 'error' };
+  orchestrator?: { status: 'success' | 'skipped' | 'error' };
+  pattern_miner?: { status: 'success' | 'skipped' | 'error' };
+}
+
+export interface ValidateRepositoryArchitectureResponse {
+  success: boolean;
+  repository: string;
+  overall_compliance_score: number;
+  compliance_grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  summary: ComplianceSummary;
+  categories: Record<string, ComplianceCategory>;
+  critical_violations: ComplianceViolation[];
+  recommendations: ComplianceRecommendation[];
+  a2a_integration?: A2AIntegrationStatus;
+}
+
+export interface CheckSpecificStandardResponse {
+  success: boolean;
+  repository: string;
+  standard_category: string;
+  compliance_score: number;
+  passed: boolean;
+  violations: ComplianceViolation[];
+  recommendations: ComplianceRecommendation[];
+}
+
+export interface SuggestImprovementsResponse {
+  success: boolean;
+  repository: string;
+  recommendations: ComplianceRecommendation[];
+  total_recommendations: number;
+}
+
+// ============================================
 // API Client Class
 // ============================================
 
@@ -200,7 +241,7 @@ class A2AClient {
 
   constructor(baseURL?: string, authToken?: string) {
     this.client = axios.create({
-      baseURL: baseURL || import.meta.env.VITE_API_BASE_URL,
+      baseURL: baseURL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
       timeout: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000'),
       headers: {
         'Content-Type': 'application/json',
@@ -248,6 +289,13 @@ class A2AClient {
    */
   clearAuthToken() {
     this.authToken = undefined;
+  }
+
+  /**
+   * Set the base URL for API requests
+   */
+  setBaseUrl(baseURL: string) {
+    this.client.defaults.baseURL = baseURL;
   }
 
   // ============================================
@@ -392,6 +440,59 @@ class A2AClient {
     return response.data;
   }
 
+  /**
+   * Validate repository architecture against all standards
+   */
+  async validateRepositoryArchitecture(
+    repository: string,
+    validationScope?: string[],
+    includeRecommendations: boolean = true
+  ): Promise<ValidateRepositoryArchitectureResponse> {
+    const response = await this.client.post<ValidateRepositoryArchitectureResponse>('/a2a/execute', {
+      skill_id: 'validate_repository_architecture',
+      input: {
+        repository,
+        validation_scope: validationScope,
+        include_recommendations: includeRecommendations,
+      },
+    });
+    return response.data;
+  }
+
+  /**
+   * Check a specific standard category for compliance
+   */
+  async checkSpecificStandard(
+    repository: string,
+    standardCategory: string
+  ): Promise<CheckSpecificStandardResponse> {
+    const response = await this.client.post<CheckSpecificStandardResponse>('/a2a/execute', {
+      skill_id: 'check_specific_standard',
+      input: {
+        repository,
+        standard_category: standardCategory,
+      },
+    });
+    return response.data;
+  }
+
+  /**
+   * Get improvement suggestions for a repository
+   */
+  async suggestImprovements(
+    repository: string,
+    maxRecommendations: number = 10
+  ): Promise<SuggestImprovementsResponse> {
+    const response = await this.client.post<SuggestImprovementsResponse>('/a2a/execute', {
+      skill_id: 'suggest_improvements',
+      input: {
+        repository,
+        max_recommendations: maxRecommendations,
+      },
+    });
+    return response.data;
+  }
+
   // ============================================
   // Protected Endpoints (Auth Required)
   // ============================================
@@ -458,11 +559,12 @@ class A2AClient {
    * Execute an arbitrary A2A skill by id with optional input
    */
   async executeSkill(skillId: string, input: Record<string, any> = {}): Promise<any> {
-    const response = await this.client.post('/a2a/execute', {
+    const response = await this.client.post<SkillExecutionResponse>('/a2a/execute', {
       skill_id: skillId,
       input,
     });
-    return response.data;
+
+    return response.data as SkillExecutionResponse;
   }
 }
 

@@ -9,9 +9,11 @@ import {
   FormControlLabel,
   Divider,
   Alert,
+  CircularProgress,
 } from '@mui/material';
-import { Save } from '@mui/icons-material';
+import { Save, PlayArrow } from '@mui/icons-material';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 
 interface Config {
   apiUrl: string;
@@ -22,20 +24,81 @@ interface Config {
 }
 
 export default function Configuration() {
-  const [config, setConfig] = useState<Config>({
-    apiUrl: import.meta.env.VITE_API_BASE_URL || '',
-    authToken: '',
-    notificationsEnabled: true,
-    autoRefresh: true,
-    refreshInterval: 60,
+  const [config, setConfig] = useState<Config>(() => {
+    // Load from localStorage first, fall back to environment variable
+    const saved = localStorage.getItem('app-config');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved config:', e);
+      }
+    }
+    return {
+      apiUrl: import.meta.env.VITE_API_BASE_URL || '',
+      authToken: '',
+      notificationsEnabled: true,
+      autoRefresh: true,
+      refreshInterval: 60,
+    };
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+
+  const handleTestConnection = async () => {
+    if (!config.apiUrl.trim()) {
+      toast.error('Please enter an API URL first');
+      return;
+    }
+
+    setIsTesting(true);
+    try {
+      const response = await axios.get(`${config.apiUrl}/health`, {
+        timeout: 5000,
+        headers: config.authToken ? { Authorization: `Bearer ${config.authToken}` } : undefined,
+      });
+
+      if (response.data?.status === 'healthy' || response.data?.status) {
+        toast.success('✓ Connection successful! API is reachable.');
+      } else {
+        toast.success('✓ Connected! Got response from API.');
+      }
+    } catch (error: any) {
+      if (error.code === 'ECONNABORTED') {
+        toast.error('✗ Connection timeout - API took too long to respond');
+      } else if (error.response?.status === 401) {
+        toast.error('✗ Authentication failed - check your token');
+      } else if (error.response?.status === 404) {
+        toast.error('✗ API endpoint not found - check the URL');
+      } else if (error.code === 'ERR_NETWORK') {
+        toast.error('✗ Network error - cannot reach the API URL');
+      } else {
+        toast.error(`✗ Connection failed: ${error.message}`);
+      }
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
       localStorage.setItem('app-config', JSON.stringify(config));
+
+      // Update the a2aClient with new API URL and auth token
+      const { a2aClient } = await import('../services/a2aClient');
+
+      if (config.apiUrl) {
+        a2aClient.setBaseUrl(config.apiUrl);
+      }
+
+      if (config.authToken) {
+        a2aClient.setAuthToken(config.authToken);
+      } else {
+        a2aClient.clearAuthToken();
+      }
+
       toast.success('Configuration saved successfully!');
     } catch (error) {
       toast.error('Failed to save configuration');
@@ -64,14 +127,24 @@ export default function Configuration() {
             <Typography variant="h6" gutterBottom>
               API Settings
             </Typography>
-            <TextField
-              fullWidth
-              label="API Base URL"
-              value={config.apiUrl}
-              onChange={(e) => setConfig({ ...config, apiUrl: e.target.value })}
-              helperText="Backend API endpoint URL"
-              sx={{ mb: 2 }}
-            />
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', mb: 2 }}>
+              <TextField
+                fullWidth
+                label="API Base URL"
+                value={config.apiUrl}
+                onChange={(e) => setConfig({ ...config, apiUrl: e.target.value })}
+                helperText="Backend API endpoint URL (e.g., https://your-api.com)"
+              />
+              <Button
+                variant="outlined"
+                startIcon={isTesting ? <CircularProgress size={20} /> : <PlayArrow />}
+                onClick={handleTestConnection}
+                disabled={isTesting || !config.apiUrl.trim()}
+                sx={{ mt: 1, minWidth: 120 }}
+              >
+                {isTesting ? 'Testing...' : 'Test'}
+              </Button>
+            </Box>
             <TextField
               fullWidth
               label="Authentication Token"

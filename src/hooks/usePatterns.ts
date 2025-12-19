@@ -173,3 +173,100 @@ export function useAddRepository() {
     },
   });
 }
+
+/**
+ * Hook to validate repository architecture
+ */
+export function useValidateArchitecture(repository: string, validationScope?: string[]) {
+  return useQuery({
+    queryKey: ['validateArchitecture', repository, validationScope],
+    queryFn: () => a2aClient.validateRepositoryArchitecture(repository, validationScope),
+    enabled: !!repository,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
+/**
+ * Mutation hook to validate repository architecture
+ */
+export function useValidateArchitectureMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: { repository: string; validationScope?: string[] }) =>
+      a2aClient.validateRepositoryArchitecture(params.repository, params.validationScope),
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(['validateArchitecture', variables.repository, variables.validationScope], data);
+      if (data.success) {
+        toast.success('Repository validation completed!');
+      } else {
+        toast.error('Repository validation failed');
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(`Validation error: ${error.message}`);
+    },
+  });
+}
+
+/**
+ * Hook to check a specific standard
+ */
+export function useCheckSpecificStandard(repository: string, standardCategory: string) {
+  return useQuery({
+    queryKey: ['checkStandard', repository, standardCategory],
+    queryFn: () => a2aClient.checkSpecificStandard(repository, standardCategory),
+    enabled: !!repository && !!standardCategory,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
+/**
+ * Mutation hook to check a specific standard
+ */
+export function useCheckSpecificStandardMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: { repository: string; standardCategory: string }) =>
+      a2aClient.checkSpecificStandard(params.repository, params.standardCategory),
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(['checkStandard', variables.repository, variables.standardCategory], data);
+      toast.success('Standard check completed!');
+    },
+    onError: (error: Error) => {
+      toast.error(`Standard check error: ${error.message}`);
+    },
+  });
+}
+
+/**
+ * Hook to get improvement suggestions
+ */
+export function useSuggestImprovements(repository: string, maxRecommendations?: number) {
+  return useQuery({
+    queryKey: ['suggestImprovements', repository, maxRecommendations],
+    queryFn: () => a2aClient.suggestImprovements(repository, maxRecommendations),
+    enabled: !!repository,
+    staleTime: 15 * 60 * 1000, // 15 minutes
+  });
+}
+
+/**
+ * Mutation hook to get improvement suggestions
+ */
+export function useSuggestImprovementsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: { repository: string; maxRecommendations?: number }) =>
+      a2aClient.suggestImprovements(params.repository, params.maxRecommendations),
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(['suggestImprovements', variables.repository, variables.maxRecommendations], data);
+      toast.success('Improvement suggestions loaded!');
+    },
+    onError: (error: Error) => {
+      toast.error(`Error fetching suggestions: ${error.message}`);
+    },
+  });
+}
