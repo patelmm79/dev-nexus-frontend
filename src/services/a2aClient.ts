@@ -232,6 +232,88 @@ export interface SuggestImprovementsResponse {
 }
 
 // ============================================
+// Component Sensibility Types
+// ============================================
+
+export interface ComponentIssue {
+  component_name: string;
+  current_location: string;
+  suggested_location: string;
+  similarity_score: number;
+  issue_type: 'duplicated' | 'misplaced' | 'orphaned';
+  reason: string;
+}
+
+export interface DetectMisplacedComponentsResponse {
+  success: boolean;
+  repository: string;
+  component_issues: ComponentIssue[];
+  total_duplicates: number;
+  total_misplaced: number;
+  filters_applied: string[];
+}
+
+export interface ComponentScore {
+  component_name: string;
+  location: string;
+  purpose_score: number;
+  usage_score: number;
+  centrality_score: number;
+  maintenance_score: number;
+  complexity_score: number;
+  first_impl_score: number;
+  overall_score: number;
+  recommendation: string;
+}
+
+export interface AnalyzeComponentCentralityResponse {
+  success: boolean;
+  repository: string;
+  components: ComponentScore[];
+  score_weights: {
+    purpose: number;
+    usage: number;
+    centrality: number;
+    maintenance: number;
+    complexity: number;
+    first_impl: number;
+  };
+  summary_statistics: {
+    avg_score: number;
+    high_priority_count: number;
+    low_priority_count: number;
+  };
+}
+
+export interface ConsolidationTask {
+  task_id: string;
+  action: 'merge' | 'move' | 'refactor' | 'delete';
+  source_components: string[];
+  target_location: string;
+  rationale: string;
+  effort_estimate: 'low' | 'medium' | 'high';
+  impact: 'low' | 'medium' | 'high';
+  dependencies: string[];
+}
+
+export interface ConsolidationPhase {
+  phase_number: number;
+  phase_name: string;
+  description: string;
+  tasks: ConsolidationTask[];
+  estimated_effort_hours: number;
+}
+
+export interface RecommendConsolidationPlanResponse {
+  success: boolean;
+  repository: string;
+  phases: ConsolidationPhase[];
+  total_effort_hours: number;
+  expected_benefits: string[];
+  risks: string[];
+}
+
+// ============================================
 // API Client Class
 // ============================================
 
@@ -489,6 +571,56 @@ class A2AClient {
         repository,
         max_recommendations: maxRecommendations,
       },
+    });
+    return response.data;
+  }
+
+  // ============================================
+  // Component Sensibility Skills
+  // ============================================
+
+  /**
+   * Detect misplaced and duplicated components
+   */
+  async detectMisplacedComponents(
+    repository: string,
+    filters?: {
+      component_type?: string[];
+      similarity_threshold?: number;
+    }
+  ): Promise<DetectMisplacedComponentsResponse> {
+    const response = await this.client.post<DetectMisplacedComponentsResponse>('/a2a/execute', {
+      skill_id: 'detect_misplaced_components',
+      input: {
+        repository,
+        filters: filters || {},
+      },
+    });
+    return response.data;
+  }
+
+  /**
+   * Analyze component centrality with 6-factor scoring
+   */
+  async analyzeComponentCentrality(
+    repository: string
+  ): Promise<AnalyzeComponentCentralityResponse> {
+    const response = await this.client.post<AnalyzeComponentCentralityResponse>('/a2a/execute', {
+      skill_id: 'analyze_component_centrality',
+      input: { repository },
+    });
+    return response.data;
+  }
+
+  /**
+   * Recommend a consolidation plan for components
+   */
+  async recommendConsolidationPlan(
+    repository: string
+  ): Promise<RecommendConsolidationPlanResponse> {
+    const response = await this.client.post<RecommendConsolidationPlanResponse>('/a2a/execute', {
+      skill_id: 'recommend_consolidation_plan',
+      input: { repository },
     });
     return response.data;
   }
