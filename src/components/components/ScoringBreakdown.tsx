@@ -110,7 +110,7 @@ export default function ScoringBreakdown({ repository }: ScoringBreakdownProps) 
             <Typography color="textSecondary" gutterBottom>
               Total Components
             </Typography>
-            <Typography variant="h5">{data.components.length}</Typography>
+            <Typography variant="h5">{data?.components?.length || 0}</Typography>
           </CardContent>
         </Card>
         <Card>
@@ -119,7 +119,9 @@ export default function ScoringBreakdown({ repository }: ScoringBreakdownProps) 
               Average Score
             </Typography>
             <Typography variant="h5">
-              {(data.summary_statistics.avg_score * 100).toFixed(0)}%
+              {data?.summary_statistics?.avg_score
+                ? (data.summary_statistics.avg_score * 100).toFixed(0)
+                : 'N/A'}%
             </Typography>
           </CardContent>
         </Card>
@@ -129,7 +131,7 @@ export default function ScoringBreakdown({ repository }: ScoringBreakdownProps) 
               High Priority
             </Typography>
             <Typography variant="h5" sx={{ color: 'warning.main' }}>
-              {data.summary_statistics.high_priority_count}
+              {data?.summary_statistics?.high_priority_count || 0}
             </Typography>
           </CardContent>
         </Card>

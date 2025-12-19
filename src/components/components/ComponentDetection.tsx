@@ -133,7 +133,7 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
             <Typography color="textSecondary" gutterBottom>
               Total Issues
             </Typography>
-            <Typography variant="h5">{data.component_issues.length}</Typography>
+            <Typography variant="h5">{data?.component_issues?.length || 0}</Typography>
           </CardContent>
         </Card>
         <Card>
@@ -142,7 +142,7 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
               Duplicates
             </Typography>
             <Typography variant="h5" sx={{ color: 'error.main' }}>
-              {data.total_duplicates}
+              {data?.total_duplicates || 0}
             </Typography>
           </CardContent>
         </Card>
@@ -152,7 +152,7 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
               Misplaced
             </Typography>
             <Typography variant="h5" sx={{ color: 'warning.main' }}>
-              {data.total_misplaced}
+              {data?.total_misplaced || 0}
             </Typography>
           </CardContent>
         </Card>
@@ -162,11 +162,13 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
               Avg. Similarity
             </Typography>
             <Typography variant="h5">
-              {(
-                (data.component_issues.reduce((sum, issue) => sum + issue.similarity_score, 0) /
-                  data.component_issues.length) *
-                100
-              ).toFixed(0)}%
+              {data?.component_issues && data.component_issues.length > 0
+                ? (
+                    (data.component_issues.reduce((sum, issue) => sum + issue.similarity_score, 0) /
+                      data.component_issues.length) *
+                    100
+                  ).toFixed(0)
+                : 'N/A'}%
             </Typography>
           </CardContent>
         </Card>
