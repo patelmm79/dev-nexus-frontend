@@ -343,7 +343,6 @@ class A2AClient {
   constructor(baseURL?: string, authToken?: string) {
     this.client = axios.create({
       baseURL: baseURL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
-      timeout: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000'),
       headers: {
         'Content-Type': 'application/json',
       },
