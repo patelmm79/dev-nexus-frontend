@@ -232,6 +232,25 @@ export interface SuggestImprovementsResponse {
 }
 
 // ============================================
+// Component Scanning Types
+// ============================================
+
+export interface ScannedComponent {
+  name: string;
+  type: string;
+  files: string[];
+  loc: number;
+  methods: number;
+}
+
+export interface ScanRepositoryComponentsResponse {
+  success: boolean;
+  repository: string;
+  components_found: number;
+  components: ScannedComponent[];
+}
+
+// ============================================
 // Component Sensibility Types
 // ============================================
 
@@ -620,6 +639,19 @@ class A2AClient {
   ): Promise<RecommendConsolidationPlanResponse> {
     const response = await this.client.post<RecommendConsolidationPlanResponse>('/a2a/execute', {
       skill_id: 'recommend_consolidation_plan',
+      input: { repository },
+    });
+    return response.data;
+  }
+
+  /**
+   * Scan a repository for components
+   */
+  async scanRepositoryComponents(
+    repository: string
+  ): Promise<ScanRepositoryComponentsResponse> {
+    const response = await this.client.post<ScanRepositoryComponentsResponse>('/a2a/execute', {
+      skill_id: 'scan_repository_components',
       input: { repository },
     });
     return response.data;

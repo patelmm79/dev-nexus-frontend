@@ -270,3 +270,15 @@ export function useSuggestImprovementsMutation() {
     },
   });
 }
+
+/**
+ * Mutation hook to scan repository for components
+ */
+export function useScanComponents() {
+  return useMutation({
+    mutationFn: (repository: string) => a2aClient.scanRepositoryComponents(repository),
+    onError: (error: Error) => {
+      toast.error(`Failed to scan components: ${error.message}`);
+    },
+  });
+}

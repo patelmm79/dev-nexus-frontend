@@ -1,10 +1,52 @@
-import { Typography, Box, Card, CardContent, Chip, CircularProgress, Alert } from '@mui/material';
-import { Folder, AccessTime } from '@mui/icons-material';
-import { useRepositories } from '../hooks/usePatterns';
+import { Typography, Box, Card, CardContent, Chip, CircularProgress, Alert, Button } from '@mui/material';
+import { Folder, AccessTime, Search } from '@mui/icons-material';
+import { useRepositories, useScanComponents } from '../hooks/usePatterns';
 import { formatDistanceToNow } from 'date-fns';
+import { useState } from 'react';
+import { ScanRepositoryComponentsResponse } from '../services/a2aClient';
+
+interface ScanResult {
+  repository: string;
+  result?: ScanRepositoryComponentsResponse;
+  error?: string;
+  isLoading: boolean;
+}
 
 export default function Repositories() {
   const { data, isLoading, isError, error } = useRepositories();
+  const scanMutation = useScanComponents();
+  const [scanResults, setScanResults] = useState<Record<string, ScanResult>>({});
+
+  const handleScanRepository = async (repositoryName: string) => {
+    setScanResults((prev) => ({
+      ...prev,
+      [repositoryName]: {
+        repository: repositoryName,
+        isLoading: true,
+      },
+    }));
+
+    try {
+      const result = await scanMutation.mutateAsync(repositoryName);
+      setScanResults((prev) => ({
+        ...prev,
+        [repositoryName]: {
+          repository: repositoryName,
+          result,
+          isLoading: false,
+        },
+      }));
+    } catch (err) {
+      setScanResults((prev) => ({
+        ...prev,
+        [repositoryName]: {
+          repository: repositoryName,
+          error: err instanceof Error ? err.message : 'Unknown error',
+          isLoading: false,
+        },
+      }));
+    }
+  };
 
   if (isLoading) {
     return (
@@ -32,45 +74,102 @@ export default function Repositories() {
       </Typography>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 3, mt: 2 }}>
-        {data?.repositories.map((repo) => (
-          <Card key={repo.name}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <Folder color="primary" />
-                <Typography variant="h6" component="div">
-                  {repo.name}
-                </Typography>
-              </Box>
-
-              <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-                <Chip
-                  label={`${repo.latest_patterns?.patterns?.length || 0} patterns`}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                />
-                <Chip
-                  icon={<AccessTime />}
-                  label={formatDistanceToNow(new Date(repo.last_updated), { addSuffix: true })}
-                  size="small"
-                  variant="outlined"
-                />
-              </Box>
-
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Domain: {repo.latest_patterns?.problem_domain || 'Unknown'}
-              </Typography>
-
-              {repo.latest_patterns?.keywords && (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 2 }}>
-                  {repo.latest_patterns.keywords.slice(0, 5).map((keyword, idx) => (
-                    <Chip key={idx} label={keyword} size="small" />
-                  ))}
+        {data?.repositories.map((repo) => {
+          const scanResult = scanResults[repo.name];
+          return (
+            <Card key={repo.name}>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <Folder color="primary" />
+                  <Typography variant="h6" component="div">
+                    {repo.name}
+                  </Typography>
                 </Box>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+
+                <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                  <Chip
+                    label={`${repo.latest_patterns?.patterns?.length || 0} patterns`}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                  <Chip
+                    icon={<AccessTime />}
+                    label={formatDistanceToNow(new Date(repo.last_updated), { addSuffix: true })}
+                    size="small"
+                    variant="outlined"
+                  />
+                </Box>
+
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Domain: {repo.latest_patterns?.problem_domain || 'Unknown'}
+                </Typography>
+
+                {repo.latest_patterns?.keywords && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 2, mb: 2 }}>
+                    {repo.latest_patterns.keywords.slice(0, 5).map((keyword, idx) => (
+                      <Chip key={idx} label={keyword} size="small" />
+                    ))}
+                  </Box>
+                )}
+
+                <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={scanResult?.isLoading ? <CircularProgress size={16} /> : <Search />}
+                    onClick={() => handleScanRepository(repo.name)}
+                    disabled={scanResult?.isLoading}
+                    fullWidth
+                  >
+                    {scanResult?.isLoading ? 'Scanning...' : 'Scan for Components'}
+                  </Button>
+                </Box>
+
+                {scanResult?.result && scanResult.result.success && (
+                  <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Typography variant="subtitle2" sx={{ color: 'success.main' }}>
+                        ✅ Found {scanResult.result.components_found} components
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {scanResult.result.components.map((component, idx) => (
+                        <Box
+                          key={idx}
+                          sx={{
+                            p: 1,
+                            bgcolor: 'background.paper',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 1,
+                            fontSize: '0.875rem',
+                          }}
+                        >
+                          <Typography variant="caption" sx={{ fontWeight: 500, display: 'block' }}>
+                            {component.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            {component.type} • {component.loc} LOC • {component.methods} methods
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.75rem' }}>
+                            {component.files.join(', ')}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+
+                {scanResult?.error && (
+                  <Alert severity="error" sx={{ mt: 2 }}>
+                    ❌ Error: {scanResult.error}
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </Box>
 
       {(!data?.repositories || data.repositories.length === 0) && (
