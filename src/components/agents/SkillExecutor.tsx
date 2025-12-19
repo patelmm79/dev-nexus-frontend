@@ -1,6 +1,5 @@
 /**
  * Skill Executor Component - Execute skills with dynamic forms
- * Place in: dev-nexus-frontend/src/components/agents/SkillExecutor.tsx
  */
 
 import { useState, useMemo } from 'react';
@@ -17,8 +16,9 @@ import {
   Divider,
   Typography,
   Paper,
-  Grid,
+  
   Chip,
+  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -26,16 +26,18 @@ import {
   Switch,
   FormControlLabel,
   InputLabel,
-  FormControl,
+  
 } from '@mui/material';
 import {
   PlayArrow as ExecuteIcon,
   ArrowBack as BackIcon,
-  Copy as CopyIcon,
+  ContentCopy as CopyIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
 import { toast } from 'react-hot-toast';
-import { Skill, useExecuteSkill, useExecutionHistory, SkillExecutionRequest } from '../../hooks/useAgents';
+import { useExecuteSkill, useExecutionHistory } from '../../hooks/useAgents';
+import { Skill, SkillExecutionRequest } from '../../types/agents';
+import { a2aClient } from '../../services/a2aClient';
 import SkillResultDisplay from './SkillResultDisplay';
 
 interface SkillExecutorProps {
@@ -54,6 +56,14 @@ export default function SkillExecutor({ skill, onClose }: SkillExecutorProps) {
   const [inputs, setInputs] = useState<Record<string, any>>({});
   const [showHistory, setShowHistory] = useState(false);
   const [useExample, setUseExample] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('a2a_auth_token');
+    } catch {
+      return null;
+    }
+  });
+  const [pendingToken, setPendingToken] = useState('');
 
   const { mutate: executeSkill, isPending, isSuccess, data: result, error } = useExecuteSkill();
   const { addToHistory } = useExecutionHistory();
@@ -111,7 +121,11 @@ export default function SkillExecutor({ skill, onClose }: SkillExecutorProps) {
       skill_id: skill.id,
       input: inputs,
     };
-
+    // ensure auth token configured for protected skills
+    if (skill.requires_authentication && !authToken) {
+      toast.error('This skill requires authentication. Provide a token first.');
+      return;
+    }
     executeSkill(request, {
       onSuccess: (data) => {
         addToHistory(request, data);
@@ -121,6 +135,18 @@ export default function SkillExecutor({ skill, onClose }: SkillExecutorProps) {
         toast.error(`Execution failed: ${err.message}`);
       },
     });
+  };
+
+  const handleSaveToken = () => {
+    try {
+      localStorage.setItem('a2a_auth_token', pendingToken);
+      a2aClient.setAuthToken(pendingToken);
+      setAuthToken(pendingToken);
+      toast.success('Auth token saved');
+      setPendingToken('');
+    } catch (err) {
+      toast.error('Failed to save token');
+    }
   };
 
   // Clear form
@@ -157,9 +183,9 @@ export default function SkillExecutor({ skill, onClose }: SkillExecutorProps) {
         )}
       </Box>
 
-      <Grid container spacing={2}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
         {/* Input Form */}
-        <Grid item xs={12} md={isSuccess ? 6 : 12}>
+        <Box sx={{ flex: isSuccess ? '1 1 50%' : '1 1 100%' }}>
           <Card>
             <CardHeader
               title="Input Parameters"
@@ -175,6 +201,28 @@ export default function SkillExecutor({ skill, onClose }: SkillExecutorProps) {
               <Stack spacing={2}>
                 {/* Skill Description */}
                 <Alert severity="info">{skill.description}</Alert>
+
+                {/* Token input for protected skills */}
+                {skill.requires_authentication && (
+                  <Box sx={{ mb: 2 }}>
+                    {authToken ? (
+                      <Chip label="Authenticated" color="success" size="small" sx={{ mb: 1 }} />
+                    ) : (
+                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                        <TextField
+                          label="Auth token"
+                          size="small"
+                          value={pendingToken}
+                          onChange={(e) => setPendingToken(e.target.value)}
+                          helperText="Provide token to enable protected skills"
+                        />
+                        <Button size="small" variant="contained" onClick={handleSaveToken}>
+                          Save
+                        </Button>
+                      </Box>
+                    )}
+                  </Box>
+                )}
 
                 {/* Form Fields */}
                 {formFields.length === 0 ? (
@@ -296,11 +344,11 @@ export default function SkillExecutor({ skill, onClose }: SkillExecutorProps) {
               </Stack>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
         {/* Result Display */}
         {isSuccess && result && (
-          <Grid item xs={12} md={6}>
+          <Box sx={{ flex: '1 1 50%' }}>
             <Card>
               <CardHeader
                 title="Execution Result"
@@ -318,9 +366,9 @@ export default function SkillExecutor({ skill, onClose }: SkillExecutorProps) {
                 <SkillResultDisplay result={result} />
               </CardContent>
             </Card>
-          </Grid>
+            </Box>
         )}
-      </Grid>
+        </Box>
 
       {/* Examples Dialog */}
       {skill.examples && skill.examples.length > 0 && (

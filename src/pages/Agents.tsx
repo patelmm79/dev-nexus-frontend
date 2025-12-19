@@ -1,154 +1,299 @@
 import { useState } from 'react';
 import {
-  Typography,
   Box,
-  Card,
-  CardContent,
-  Chip,
+  Container,
+  Typography,
+  Paper,
+  Tabs,
+  Tab,
+  TextField,
+  InputAdornment,
   CircularProgress,
   Alert,
+  Card,
+  CardContent,
+  CardHeader,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  DialogContentText,
 } from '@mui/material';
-import { Hub, CheckCircle, Error as ErrorIcon, Help } from '@mui/icons-material';
-import { useExternalAgents } from '../hooks/usePatterns';
-import { formatDistanceToNow } from 'date-fns';
-import { a2aClient } from '../services/a2aClient';
+import { Search as SearchIcon, Refresh as RefreshIcon } from '@mui/icons-material';
+import { useAgentCard, useSkillSearch, useSkillsByCategory } from '../hooks/useAgents';
+import SkillCard from '../components/agents/SkillCard';
+import SkillExecutor from '../components/agents/SkillExecutor';
+import type { Skill } from '../types/agents';
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`tabpanel-${index}`}
+      aria-labelledby={`tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    </div>
+  );
+}
 
 export default function Agents() {
-  const { data, isLoading, isError, error } = useExternalAgents();
-  const [running, setRunning] = useState<Record<string, boolean>>({});
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogContent, setDialogContent] = useState<string>('');
+  const [tabValue, setTabValue] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
+  const [showExecutor, setShowExecutor] = useState(false);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'healthy':
-        return 'success';
-      case 'unhealthy':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
+  const { data: agentCard, isLoading: agentLoading, refetch } = useAgentCard();
+  const card: any = agentCard;
+  const { skills: searchResults } = useSkillSearch(searchQuery);
+  const skillsByCategory = useSkillsByCategory();
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'healthy':
-        return <CheckCircle />;
-      case 'unhealthy':
-        return <ErrorIcon />;
-      default:
-        return <Help />;
-    }
-  };
-
-  if (isError) {
+  if (agentLoading) {
     return (
-      <Alert severity="error">
-        Failed to load agents: {error instanceof Error ? error.message : 'Unknown error'}
-      </Alert>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
     );
   }
 
+  if (!agentCard) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="error">Failed to load agent information. Please try again.</Alert>
+        <Button onClick={() => refetch()} sx={{ mt: 2 }}>
+          Retry
+        </Button>
+      </Container>
+    );
+  }
+
+  const categories = Object.keys(skillsByCategory);
+
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
-        External Agents
-      </Typography>
-      <Typography variant="body1" color="text.secondary" gutterBottom>
-        Monitor health and status of connected external agents
-      </Typography>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Agent Header */}
+      <Card sx={{ mb: 4, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+        <CardHeader
+          title={
+            <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold' }}>
+              {card?.name}
+            </Typography>
+          }
+          subheader={
+            <Typography sx={{ color: 'rgba(255,255,255,0.8)' }}>
+              {card?.description}
+            </Typography>
+          }
+        />
+        <CardContent>
+          <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', color: 'white' }}>
+            <Box sx={{ minWidth: 160 }}>
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                VERSION
+              </Typography>
+              <Typography variant="h6">{card?.version}</Typography>
+            </Box>
+            <Box sx={{ minWidth: 160 }}>
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                SKILLS AVAILABLE
+              </Typography>
+              <Typography variant="h6">{card?.metadata?.skill_count}</Typography>
+            </Box>
+            <Box sx={{ minWidth: 160 }}>
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                ARCHITECTURE
+              </Typography>
+              <Typography variant="h6" sx={{ textTransform: 'capitalize' }}>
+                {card?.metadata?.architecture}
+              </Typography>
+            </Box>
+            <Box sx={{ minWidth: 160 }}>
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                EXTERNAL AGENTS
+              </Typography>
+              <Typography variant="h6">
+                {Object.keys(card?.metadata?.external_agents || {}).length}
+              </Typography>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
 
-      {isLoading ? (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-          <CircularProgress />
+      {/* Search and Filter */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Box display="flex" gap={2} alignItems="center">
+          <TextField
+            fullWidth
+            placeholder="Search skills by name, description, or tag..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            size="small"
+          />
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={() => refetch()}
+          >
+            Refresh
+          </Button>
         </Box>
+        {searchQuery && (
+          <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'text.secondary' }}>
+            Found {searchResults.length} skill{searchResults.length !== 1 ? 's' : ''}
+          </Typography>
+        )}
+      </Paper>
+
+      {/* Main Content */}
+      {showExecutor && selectedSkill ? (
+        <SkillExecutor
+          skill={selectedSkill}
+          onClose={() => {
+            setShowExecutor(false);
+            setSelectedSkill(null);
+          }}
+        />
       ) : (
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 3, mt: 2 }}>
-          {Array.isArray(data?.agents) ? data.agents.map((agent) => (
-            <Card key={agent.name}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <Hub color="primary" />
-                  <Typography variant="h6" component="div">
-                    {agent.name}
-                  </Typography>
-                </Box>
+        <>
+          {/* Tabs for Browse or Search Results */}
+          <Paper>
+            <Tabs
+              value={tabValue}
+              onChange={(_: any, newValue: number) => setTabValue(newValue)}
+              aria-label="skills tabs"
+            >
+              <Tab label={`By Category (${categories.length})`} id="tab-0" />
+              <Tab label={`Search Results (${searchResults.length})`} id="tab-1" />
+              <Tab label="All Skills" id="tab-2" />
+            </Tabs>
 
-                <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-                  <Chip
-                    icon={getStatusIcon(agent.status)}
-                    label={agent.status}
-                    color={getStatusColor(agent.status)}
-                    size="small"
-                  />
-                  <Chip
-                    label={`Checked ${formatDistanceToNow(new Date(agent.last_checked), { addSuffix: true })}`}
-                    size="small"
-                    variant="outlined"
-                  />
+            {/* Category View */}
+            <TabPanel value={tabValue} index={0}>
+              {categories.length === 0 ? (
+                <Alert severity="info">No skills available</Alert>
+              ) : (
+                <Box sx={{ display: 'grid', gap: 3 }}>
+                  {categories.map((category) => (
+                    <Box key={category}>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          mb: 2,
+                          pb: 1,
+                          borderBottom: '2px solid',
+                          borderColor: 'primary.main',
+                        }}
+                      >
+                        {category} Skills
+                      </Typography>
+                      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 2 }}>
+                        {(skillsByCategory as Record<string, typeof card.skills>)[category].map((skill: any) => (
+                          <Box key={skill.id}>
+                            <SkillCard
+                              skill={skill}
+                              onExecute={() => {
+                                setSelectedSkill(skill);
+                                setShowExecutor(true);
+                              }}
+                            />
+                          </Box>
+                        ))}
+                      </Box>
+                    </Box>
+                  ))}
                 </Box>
+              )}
+            </TabPanel>
 
-                <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-all' }}>
-                  URL: {agent.url}
-                </Typography>
-                <Box sx={{ mt: 2 }}>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    disabled={running[agent.name] === true}
-                    onClick={async () => {
-                      try {
-                        setRunning((s) => ({ ...s, [agent.name]: true }));
-                        // Default to using agent.name as skill id; integration docs may provide exact skill ids
-                        const skillId = agent.name;
-                        const res = await a2aClient.executeSkill(skillId, {});
-                        setDialogContent(JSON.stringify(res, null, 2));
-                        setDialogOpen(true);
-                      } catch (e: any) {
-                        setDialogContent(String(e?.response?.data ?? e?.message ?? e));
-                        setDialogOpen(true);
-                      } finally {
-                        setRunning((s) => ({ ...s, [agent.name]: false }));
-                      }
+            {/* Search Results */}
+            <TabPanel value={tabValue} index={1}>
+              {searchQuery ? (
+                searchResults.length === 0 ? (
+                  <Alert severity="info">
+                    No skills match your search. Try different keywords.
+                  </Alert>
+                ) : (
+                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 2 }}>
+                    {searchResults.map((skill: any) => (
+                      <Box key={skill.id}>
+                        <SkillCard
+                          skill={skill}
+                          onExecute={() => {
+                            setSelectedSkill(skill);
+                            setShowExecutor(true);
+                          }}
+                          highlight={searchQuery}
+                        />
+                      </Box>
+                    ))}
+                  </Box>
+                )
+              ) : (
+                <Alert severity="info">Enter a search query to find skills</Alert>
+              )}
+            </TabPanel>
+
+            {/* All Skills */}
+            <TabPanel value={tabValue} index={2}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 2 }}>
+                {card.skills?.map((skill: any) => (
+                  <Box key={skill.id}>
+                    <SkillCard
+                      skill={skill}
+                      onExecute={() => {
+                        setSelectedSkill(skill);
+                        setShowExecutor(true);
+                      }}
+                    />
+                  </Box>
+                ))}
+              </Box>
+            </TabPanel>
+          </Paper>
+        </>
+      )}
+
+      {/* External Agents Info */}
+      {Object.keys(card.metadata?.external_agents || {}).length > 0 && (
+        <Card sx={{ mt: 4 }}>
+          <CardHeader title="External Agents" />
+          <CardContent>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 2 }}>
+              {Object.entries(card.metadata?.external_agents || {}).map(([name, description]: any) => (
+                <Box key={name}>
+                  <Box
+                    sx={{
+                      p: 2,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 1,
                     }}
                   >
-                    {running[agent.name] ? 'Running…' : 'Run'}
-                  </Button>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                      {name.replace(/_/g, ' ')}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {String(description)}
+                    </Typography>
+                  </Box>
                 </Box>
-              </CardContent>
-            </Card>
-          )) : null}
-        </Box>
+              ))}
+            </Box>
+          </CardContent>
+        </Card>
       )}
-
-      {!isLoading && (!Array.isArray(data?.agents) || data.agents.length === 0) && (
-        <Box sx={{ mt: 4, textAlign: 'center' }}>
-          <Typography variant="h6" color="text.secondary">
-            No external agents configured
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Configure external agents in the backend to monitor their health status
-          </Typography>
-        </Box>
-      )}
-
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Agent Run Result</DialogTitle>
-        <DialogContent>
-          <DialogContentText component="pre" sx={{ whiteSpace: 'pre-wrap' }}>
-            {dialogContent}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+    </Container>
   );
 }

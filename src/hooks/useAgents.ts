@@ -1,57 +1,18 @@
 /**
  * Custom hooks for agent and skill management
- * Place in: dev-nexus-frontend/src/hooks/useAgents.ts
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
 import { useCallback } from 'react';
+import { a2aClient } from '../services/a2aClient';
+import {
+  Skill,
+  AgentCard,
+  SkillExecutionRequest,
+  SkillExecutionResponse,
+} from '../types/agents';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-
-export interface Skill {
-  id: string;
-  name: string;
-  description: string;
-  tags: string[];
-  requires_authentication: boolean;
-  input_schema: Record<string, any>;
-  examples: Array<{ input: any; description: string }>;
-}
-
-export interface AgentCard {
-  name: string;
-  description: string;
-  version: string;
-  url: string;
-  capabilities: {
-    streaming: boolean;
-    multimodal: boolean;
-    authentication: string;
-  };
-  skills: Skill[];
-  metadata: {
-    repository: string;
-    documentation: string;
-    authentication_note: string;
-    knowledge_base: string;
-    external_agents: Record<string, string>;
-    architecture: string;
-    skill_count: number;
-  };
-}
-
-export interface SkillExecutionRequest {
-  skill_id: string;
-  input: Record<string, any>;
-}
-
-export interface SkillExecutionResponse {
-  success: boolean;
-  skill_id: string;
-  error?: string;
-  [key: string]: any; // Skill-specific response fields
-}
+// types are centralized in src/types/agents.ts
 
 /**
  * Fetch the AgentCard (all available skills and metadata)
@@ -60,8 +21,7 @@ export function useAgentCard() {
   return useQuery<AgentCard>({
     queryKey: ['agentCard'],
     queryFn: async () => {
-      const response = await axios.get(`${API_BASE_URL}/.well-known/agent.json`);
-      return response.data;
+      return await a2aClient.getAgentCard();
     },
     staleTime: Infinity, // AgentCard rarely changes
     retry: 2,
@@ -73,25 +33,11 @@ export function useAgentCard() {
  */
 export function useExecuteSkill() {
   const queryClient = useQueryClient();
-  const authToken = localStorage.getItem('a2a_auth_token');
 
   return useMutation<SkillExecutionResponse, Error, SkillExecutionRequest>({
     mutationFn: async (request) => {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
-
-      const response = await axios.post<SkillExecutionResponse>(
-        `${API_BASE_URL}/a2a/execute`,
-        request,
-        { headers, timeout: 30000 }
-      );
-
-      return response.data;
+      const res = await a2aClient.executeSkill(request.skill_id, request.input || {});
+      return res as SkillExecutionResponse;
     },
     onSuccess: () => {
       // Invalidate related queries after skill execution
@@ -207,4 +153,32 @@ export function useExecutionHistory() {
   }, []);
 
   return { getHistory, addToHistory, clearHistory };
+}
+
+/**
+ * Fetch recent actions feed with pagination
+ */
+export function useRecentActions(
+  limit: number = 20,
+  offset: number = 0,
+  actionTypes?: string[],
+  repository?: string
+) {
+  return useQuery<SkillExecutionResponse>({
+    queryKey: ['recentActions', limit, offset, actionTypes, repository],
+    queryFn: async () => {
+      const input: Record<string, any> = { limit, offset };
+      if (actionTypes && actionTypes.length > 0) {
+        input.action_types = actionTypes;
+      }
+      if (repository) {
+        input.repository = repository;
+      }
+
+      const res = await a2aClient.executeSkill('get_recent_actions', input);
+      return res as SkillExecutionResponse;
+    },
+    staleTime: 30000, // 30 seconds
+    retry: 2,
+  });
 }

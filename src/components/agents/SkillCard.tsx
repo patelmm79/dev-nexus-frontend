@@ -1,6 +1,5 @@
 /**
  * Skill Card Component - Display individual skill
- * Place in: dev-nexus-frontend/src/components/agents/SkillCard.tsx
  */
 
 import {
@@ -10,6 +9,7 @@ import {
   Typography,
   Button,
   Box,
+
   Chip,
   Stack,
   Tooltip,
@@ -20,8 +20,16 @@ import {
   Lock as LockedIcon,
   Visibility as InfoIcon,
 } from '@mui/icons-material';
-import { Skill } from '../../hooks/useAgents';
-import { useMemo } from 'react';
+import { Skill } from '../../types/agents';
+import { useMemo, useState } from 'react';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
+import { VpnKey as TokenIcon } from '@mui/icons-material';
+import { a2aClient } from '../../services/a2aClient';
+import { toast } from 'react-hot-toast';
 
 interface SkillCardProps {
   skill: Skill;
@@ -43,6 +51,9 @@ const categoryColors: Record<string, string> = {
 };
 
 export default function SkillCard({ skill, onExecute, highlight = '' }: SkillCardProps) {
+  const [openToken, setOpenToken] = useState(false);
+  const [pendingToken, setPendingToken] = useState('');
+  const savedToken = typeof window !== 'undefined' ? localStorage.getItem('a2a_auth_token') : null;
   // Highlight search term in description
   const highlightedDescription = useMemo(() => {
     if (!highlight) return skill.description;
@@ -55,6 +66,7 @@ export default function SkillCard({ skill, onExecute, highlight = '' }: SkillCar
   const bgColor = categoryColors[primaryTag] || '#757575';
 
   return (
+    <>
     <Card
       sx={{
         height: '100%',
@@ -205,7 +217,50 @@ export default function SkillCard({ skill, onExecute, highlight = '' }: SkillCar
             </IconButton>
           </Tooltip>
         )}
+        <Tooltip title="Provide token">
+          <IconButton
+            size="small"
+            onClick={() => setOpenToken(true)}
+            sx={{ ml: 1 }}
+            aria-label="provide-token"
+          >
+            <TokenIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
       </CardActions>
     </Card>
+    <Dialog open={openToken} onClose={() => setOpenToken(false)}>
+      <DialogTitle>Provide Auth Token</DialogTitle>
+      <DialogContent>
+        <TextField
+          label="Auth token"
+          fullWidth
+          size="small"
+          value={pendingToken}
+          onChange={(e) => setPendingToken(e.target.value)}
+          helperText={savedToken ? 'Existing token present' : 'Paste token to enable protected skills'}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setOpenToken(false)}>Cancel</Button>
+        <Button
+          onClick={() => {
+            try {
+              localStorage.setItem('a2a_auth_token', pendingToken);
+              a2aClient.setAuthToken(pendingToken);
+              toast.success('Token saved');
+              setPendingToken('');
+              setOpenToken(false);
+            } catch (err) {
+              toast.error('Failed to save token');
+            }
+          }}
+          variant="contained"
+        >
+          Save
+        </Button>
+      </DialogActions>
+    </Dialog>
+    </>
   );
 }
