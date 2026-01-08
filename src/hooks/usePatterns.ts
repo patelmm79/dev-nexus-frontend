@@ -310,10 +310,12 @@ export function useListComponents(
   return useQuery({
     queryKey: ['listComponents', repository, componentType, limit, offset],
     queryFn: async () => {
+      console.log('useListComponents queryFn called with:', { repository, componentType, limit, offset });
       const result = await a2aClient.listComponents(repository, componentType, limit, offset);
       console.log('listComponents result:', { repository, result });
       return result;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!repository, // Only fetch if repository is provided
   });
 }
