@@ -1,6 +1,6 @@
 import { Typography, Box, Card, CardContent, Chip, CircularProgress, Alert, Button } from '@mui/material';
 import { Folder, AccessTime, Search } from '@mui/icons-material';
-import { useRepositories, useScanComponents } from '../hooks/usePatterns';
+import { useRepositories, useScanComponents, useListComponents } from '../hooks/usePatterns';
 import { formatDistanceToNow } from 'date-fns';
 import { useState } from 'react';
 import { ScanRepositoryComponentsResponse } from '../services/a2aClient';
@@ -76,6 +76,9 @@ export default function Repositories() {
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 3, mt: 2 }}>
         {data?.repositories.map((repo) => {
           const scanResult = scanResults[repo.name];
+          const { data: componentsData } = useListComponents(repo.name);
+          const componentCount = componentsData?.total || 0;
+
           return (
             <Card key={repo.name}>
               <CardContent>
@@ -91,6 +94,12 @@ export default function Repositories() {
                     label={`${repo.latest_patterns?.patterns?.length || 0} patterns`}
                     size="small"
                     color="primary"
+                    variant="outlined"
+                  />
+                  <Chip
+                    label={`${componentCount} components`}
+                    size="small"
+                    color="secondary"
                     variant="outlined"
                   />
                   <Chip

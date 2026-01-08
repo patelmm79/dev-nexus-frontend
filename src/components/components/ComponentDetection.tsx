@@ -16,6 +16,7 @@ import {
   Slider,
 } from '@mui/material';
 import { useDetectMisplacedComponents } from '../../hooks/useComponentSensibility';
+import { useListComponents } from '../../hooks/usePatterns';
 
 interface ComponentDetectionProps {
   repository: string;
@@ -37,6 +38,9 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
       similarity_threshold: similarityThreshold,
     }
   );
+
+  const { data: componentsData } = useListComponents(repository);
+  const totalComponentsScanned = componentsData?.total || 0;
 
   const filteredIssues = useMemo(() => {
     if (!data?.component_issues) return [];
@@ -128,6 +132,14 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
       </Paper>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2 }}>
+        <Card>
+          <CardContent sx={{ textAlign: 'center' }}>
+            <Typography color="textSecondary" gutterBottom>
+              Components Scanned
+            </Typography>
+            <Typography variant="h5">{totalComponentsScanned}</Typography>
+          </CardContent>
+        </Card>
         <Card>
           <CardContent sx={{ textAlign: 'center' }}>
             <Typography color="textSecondary" gutterBottom>
