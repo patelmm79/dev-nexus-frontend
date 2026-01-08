@@ -275,8 +275,17 @@ export function useSuggestImprovementsMutation() {
  * Mutation hook to scan repository for components
  */
 export function useScanComponents() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: (repository: string) => a2aClient.scanRepositoryComponents(repository),
+    onSuccess: (_, repository) => {
+      // Invalidate repositories list to refresh last_updated timestamps
+      queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      // Invalidate component list for this repository
+      queryClient.invalidateQueries({ queryKey: ['listComponents', repository] });
+      toast.success('Components scanned successfully!');
+    },
     onError: (error: Error) => {
       toast.error(`Failed to scan components: ${error.message}`);
     },
