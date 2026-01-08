@@ -280,12 +280,16 @@ export function useScanComponents() {
   return useMutation({
     mutationFn: (repository: string) => a2aClient.scanRepositoryComponents(repository),
     onSuccess: async () => {
+      console.log('Scan successful, invalidating queries');
       // Invalidate repositories list to refresh last_updated timestamps
       await queryClient.invalidateQueries({ queryKey: ['repositories'] });
       // Invalidate all listComponents queries (all pagination/filter variants)
-      await queryClient.invalidateQueries({ queryKey: ['listComponents'], exact: false });
+      const invalidated = await queryClient.invalidateQueries({ queryKey: ['listComponents'], exact: false });
+      console.log('Invalidated listComponents queries:', invalidated);
       // Refetch immediately for better UX
       await queryClient.refetchQueries({ queryKey: ['repositories'] });
+      await queryClient.refetchQueries({ queryKey: ['listComponents'], exact: false });
+      console.log('Refetch complete');
       toast.success('Components scanned successfully!');
     },
     onError: (error: Error) => {
@@ -305,7 +309,11 @@ export function useListComponents(
 ) {
   return useQuery({
     queryKey: ['listComponents', repository, componentType, limit, offset],
-    queryFn: () => a2aClient.listComponents(repository, componentType, limit, offset),
+    queryFn: async () => {
+      const result = await a2aClient.listComponents(repository, componentType, limit, offset);
+      console.log('listComponents result:', { repository, result });
+      return result;
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
