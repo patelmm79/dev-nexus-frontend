@@ -312,6 +312,17 @@ export function useListComponents(
     queryFn: async () => {
       console.log('useListComponents queryFn called with:', { repository, componentType, limit, offset });
       const result = await a2aClient.listComponents(repository, componentType, limit, offset);
+
+      // Handle backend errors
+      if ((result as any).error) {
+        console.error('listComponents API error:', {
+          error: (result as any).error,
+          available_skills: (result as any).available_skills,
+        });
+        // Return empty result on error so UI doesn't crash
+        return { success: false, components: [], total: 0, offset: 0, limit: 0 } as any;
+      }
+
       console.log('listComponents result:', { repository, result });
       return result;
     },
