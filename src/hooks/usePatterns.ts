@@ -279,11 +279,13 @@ export function useScanComponents() {
 
   return useMutation({
     mutationFn: (repository: string) => a2aClient.scanRepositoryComponents(repository),
-    onSuccess: (_, repository) => {
+    onSuccess: async (_, repository) => {
       // Invalidate repositories list to refresh last_updated timestamps
-      queryClient.invalidateQueries({ queryKey: ['repositories'] });
-      // Invalidate component list for this repository
-      queryClient.invalidateQueries({ queryKey: ['listComponents', repository] });
+      await queryClient.invalidateQueries({ queryKey: ['repositories'] });
+      // Invalidate all listComponents queries for this repository (all pagination/filter variants)
+      await queryClient.invalidateQueries({ queryKey: ['listComponents'], exact: false });
+      // Refetch immediately for better UX
+      await queryClient.refetchQueries({ queryKey: ['repositories'] });
       toast.success('Components scanned successfully!');
     },
     onError: (error: Error) => {
