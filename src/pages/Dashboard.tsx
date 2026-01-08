@@ -7,6 +7,7 @@ import {
 } from '@mui/icons-material';
 import { useHealth, useRepositories, useCrossRepoPatterns, useExternalAgents } from '../hooks/usePatterns';
 import StatCard from '../components/dashboard/StatCard';
+import RecentActivity from '../components/agents/RecentActivity';
 
 export default function Dashboard() {
   const { data: health, isLoading: healthLoading } = useHealth();
@@ -77,6 +78,10 @@ export default function Dashboard() {
         <Typography variant="body2" color="text.secondary">
           Navigate using the sidebar to explore repositories, patterns, deployments, and more.
         </Typography>
+      </Box>
+
+      <Box sx={{ mt: 4 }}>
+        <RecentActivity defaultLimit={10} />
       </Box>
     </Box>
   );
