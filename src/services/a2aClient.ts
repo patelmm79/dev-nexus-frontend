@@ -250,6 +250,26 @@ export interface ScanRepositoryComponentsResponse {
   components: ScannedComponent[];
 }
 
+export interface ComponentMetadata {
+  name: string;
+  type: 'api_client' | 'infrastructure' | 'business_logic' | 'deployment_pattern';
+  repository: string;
+  language: string;
+  loc: number;
+  api_signature?: string;
+  keywords: string[];
+  description?: string;
+  files?: string[];
+}
+
+export interface ListComponentsResponse {
+  success: boolean;
+  components: ComponentMetadata[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
 // ============================================
 // Component Sensibility Types
 // ============================================
@@ -653,6 +673,27 @@ class A2AClient {
     const response = await this.client.post<ScanRepositoryComponentsResponse>('/a2a/execute', {
       skill_id: 'scan_repository_components',
       input: { repository },
+    });
+    return response.data;
+  }
+
+  /**
+   * List components with filtering and pagination
+   */
+  async listComponents(
+    repository?: string,
+    componentType?: string,
+    limit: number = 100,
+    offset: number = 0
+  ): Promise<ListComponentsResponse> {
+    const response = await this.client.post<ListComponentsResponse>('/a2a/execute', {
+      skill_id: 'list_components',
+      input: {
+        repository: repository || undefined,
+        component_type: componentType || undefined,
+        limit,
+        offset,
+      },
     });
     return response.data;
   }

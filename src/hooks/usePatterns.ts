@@ -282,3 +282,19 @@ export function useScanComponents() {
     },
   });
 }
+
+/**
+ * Hook to list components with filtering and pagination
+ */
+export function useListComponents(
+  repository?: string,
+  componentType?: string,
+  limit: number = 100,
+  offset: number = 0
+) {
+  return useQuery({
+    queryKey: ['listComponents', repository, componentType, limit, offset],
+    queryFn: () => a2aClient.listComponents(repository, componentType, limit, offset),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
