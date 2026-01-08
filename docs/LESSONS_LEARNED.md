@@ -25,17 +25,25 @@ Key Technical Lessons
 - Ensure the client exports typed functions so hooks/components can rely on them.
 
 6. React Query usage & side-effects
-- Mutations should invalidate related queries on success (e.g., patterns, repositories) to keep UI in sync.
+- Mutations **must** invalidate related queries on success (e.g., patterns, repositories) to keep UI in sync. This is not optional—without invalidation, the UI will show stale data even though the backend has been updated.
 - Keep keys consistent and centralized to avoid stale cache issues.
+- Use `await` on `invalidateQueries` to ensure completion before proceeding.
+- Use `exact: false` when invalidating partial query key matches (e.g., invalidating all pagination variants of a query).
+- For better UX, explicitly call `refetchQueries` immediately after invalidation to trigger instant refetch.
 
-7. Local persistence and limits
+7. React Hooks rules—don't call hooks inside loops or conditionals
+- Calling hooks (e.g., `useListComponents`, `useQuery`, etc.) inside `.map()` callbacks or conditionals violates React's rules of hooks and causes "too many re-renders" errors.
+- Fix: extract the content into a separate component that calls the hook at the component level, then render that component from the map.
+- This ensures hooks are called in the same order on every render.
+
+8. Local persistence and limits
 - Execution history stored in `localStorage` needs size capping and try/catch to avoid failures in restrictive browsers.
 
-8. Vercel deployment protection can block automated checks
+9. Vercel deployment protection can block automated checks
 - Protected deployments require a bypass token or SSO redirect; automated smoke tests must use the bypass token URL pattern.
 - Store notes about how to obtain and use the bypass token in docs/DEPLOYMENT.md (or use environment-based preview links for CI).
 
-9. Bundle-size awareness
+10. Bundle-size awareness
 - Vite reported large chunks (>500KB). Consider code-splitting dynamic imports for large feature pages and move rarely-used libs to dynamic import.
 
 Process Lessons
@@ -52,4 +60,5 @@ Quick checklist for future similar integrations
 - Check Vercel protection settings before running automated smoke tests.
 
 Appendix
-- Files edited during this task: `src/hooks/useAgents.ts`, `src/components/agents/*` (SkillCard, SkillExecutor, SkillResultDisplay, RecentActivity), `src/services/a2aClient.ts` (client implementations), `src/pages/Agents.tsx`.
+- Files edited during initial integration: `src/hooks/useAgents.ts`, `src/components/agents/*` (SkillCard, SkillExecutor, SkillResultDisplay, RecentActivity), `src/services/a2aClient.ts` (client implementations), `src/pages/Agents.tsx`.
+- Files edited for component scanning feature: `src/pages/Repositories.tsx` (extracted RepositoryCard component), `src/components/components/ComponentDetection.tsx` (added component count display), `src/hooks/usePatterns.ts` (fixed useScanComponents mutation with proper query invalidation).
