@@ -279,10 +279,10 @@ export function useScanComponents() {
 
   return useMutation({
     mutationFn: (repository: string) => a2aClient.scanRepositoryComponents(repository),
-    onSuccess: async (_, repository) => {
+    onSuccess: async () => {
       // Invalidate repositories list to refresh last_updated timestamps
       await queryClient.invalidateQueries({ queryKey: ['repositories'] });
-      // Invalidate all listComponents queries for this repository (all pagination/filter variants)
+      // Invalidate all listComponents queries (all pagination/filter variants)
       await queryClient.invalidateQueries({ queryKey: ['listComponents'], exact: false });
       // Refetch immediately for better UX
       await queryClient.refetchQueries({ queryKey: ['repositories'] });
