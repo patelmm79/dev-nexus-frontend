@@ -20,8 +20,9 @@ import {
   Pagination,
   Button,
 } from '@mui/material';
-import { Search as SearchIcon, Analyze as AnalyzeIcon } from '@mui/icons-material';
+import { Search as SearchIcon, Tune as AnalyzeIcon } from '@mui/icons-material';
 import { useListComponents } from '../../hooks/useComponentSensibility';
+import ComponentCentralityDetail from './ComponentCentralityDetail';
 
 interface ScoringBreakdownProps {
   repository: string;
@@ -194,8 +195,13 @@ export default function ScoringBreakdown({ repository }: ScoringBreakdownProps) 
         </CardContent>
       </Card>
 
-      {/* Component Centrality Detail Modal - will be rendered here */}
-      {/* TODO: Add ComponentCentralityDetailModal when created */}
+      {/* Component Centrality Detail Modal */}
+      <ComponentCentralityDetail
+        open={centralityModalOpen}
+        componentName={selectedComponent?.name || ''}
+        currentLocation={repository}
+        onClose={() => setCentralityModalOpen(false)}
+      />
     </Box>
   );
 }

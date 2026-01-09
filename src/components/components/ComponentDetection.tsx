@@ -40,7 +40,7 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
   const { data, isLoading, isError, error } = useDetectMisplacedComponents(
     repository,
     {
-      similarity_threshold: similarityThreshold,
+      min_similarity_score: similarityThreshold / 100, // Convert 0-100 to 0-1
     }
   );
 
