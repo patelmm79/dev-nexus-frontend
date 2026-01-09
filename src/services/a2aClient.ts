@@ -368,19 +368,25 @@ export interface ComponentLocationScore {
 }
 
 export interface ComponentCentralityRecommendation {
-  from_repository: string;
-  to_repository: string;
-  improvement_metrics: Record<string, any>;
-  migration_details: string;
+  from: string;
+  to?: string;
+  improvement: number; // 0-1 decimal
+  improvement_metrics?: Record<string, any>;
+  migration_details?: string;
+}
+
+export interface ComponentCentralityAnalysis {
+  component_name: string;
+  best_location: string;
+  all_scores: ComponentLocationScore[] | Record<string, any>;
+  recommendation?: ComponentCentralityRecommendation;
+  analysis_timestamp?: string;
 }
 
 export interface ComponentCentralityAnalysisResponse {
   success: boolean;
-  component_name: string;
-  best_location: string;
-  all_scores: ComponentLocationScore[];
-  recommendation: ComponentCentralityRecommendation;
-  analysis_timestamp: string;
+  analysis: ComponentCentralityAnalysis;
+  analysis_timestamp?: string;
 }
 
 // Single-component consolidation plan response
@@ -405,6 +411,194 @@ export interface ComponentConsolidationPlanResponse {
   risks: string[];
   estimated_total_effort_hours: number;
   timestamp: string;
+}
+
+// ============================================
+// Component Dependencies Types
+// ============================================
+
+export interface ComponentDependency {
+  source_component: string;
+  target_component: string;
+  import_type: 'direct' | 'indirect' | 'peer';
+  import_count: number;
+  files_involved: string[];
+  strength: number; // 0-1, how critical is this dependency
+}
+
+export interface CircularDependencyPath {
+  components: string[];
+  cycle_length: number;
+  severity: 'low' | 'medium' | 'high';
+}
+
+export interface GetComponentDependenciesResponse {
+  success: boolean;
+  repository: string;
+  component_name?: string;
+  dependencies: ComponentDependency[];
+  circular_dependencies: CircularDependencyPath[];
+  total_dependencies: number;
+  analysis_depth: number;
+  analysis_timestamp: string;
+}
+
+// ============================================
+// Analytics Dashboard Types
+// ============================================
+
+// Dashboard Overview Types
+export interface SystemHealthMetrics {
+  overall_health_score: number; // 0-100
+  status: 'healthy' | 'warning' | 'critical';
+  uptime_percentage: number;
+  last_scan_timestamp: string;
+}
+
+export interface DashboardMetric {
+  label: string;
+  value: number;
+  unit: string;
+  trend: number; // percentage change, negative = down, positive = up
+  status: 'improving' | 'stable' | 'declining';
+}
+
+export interface SystemAlert {
+  id: string;
+  severity: 'critical' | 'warning' | 'info';
+  title: string;
+  description: string;
+  timestamp: string;
+  actionable: boolean;
+  recommendation?: string;
+}
+
+export interface TimelineHighlight {
+  timestamp: string;
+  event_type: string;
+  title: string;
+  description: string;
+  impact: 'high' | 'medium' | 'low';
+}
+
+export interface GetDashboardOverviewResponse {
+  success: boolean;
+  system_health: SystemHealthMetrics;
+  metrics: DashboardMetric[];
+  alerts: SystemAlert[];
+  timeline_highlights: TimelineHighlight[];
+  last_updated: string;
+}
+
+// Pattern Analytics Types
+export interface PatternAdoptionPoint {
+  date: string;
+  pattern_count: number;
+  repository_count: number;
+  new_patterns: number;
+}
+
+export interface PatternGrowthRate {
+  period: string;
+  growth_percentage: number;
+  adoption_velocity: number;
+}
+
+export interface GetPatternAdoptionTrendsResponse {
+  success: boolean;
+  adoption_timeline: PatternAdoptionPoint[];
+  growth_rates: PatternGrowthRate[];
+  start_date: string;
+  end_date: string;
+}
+
+export interface PatternHealthScore {
+  pattern_name: string;
+  health_score: number; // 0-100
+  usage_count: number;
+  adoption_rate: number;
+}
+
+export interface PatternHealthTrend {
+  date: string;
+  avg_health_score: number;
+  total_issues: number;
+  healthy_patterns_count: number;
+}
+
+export interface PatternIssueType {
+  issue_type: string;
+  count: number;
+  percentage: number;
+}
+
+export interface GetPatternHealthSummaryResponse {
+  success: boolean;
+  pattern_scores: PatternHealthScore[];
+  health_trends: PatternHealthTrend[];
+  issue_breakdown: PatternIssueType[];
+  overall_health_score: number;
+}
+
+// Component Analytics Types
+export interface ComponentDuplicationMetric {
+  duplication_level: 'low' | 'medium' | 'high';
+  component_count: number;
+  percentage: number;
+}
+
+export interface ConsolidationProgress {
+  phase: string;
+  total_components: number;
+  completed: number;
+  percentage: number;
+}
+
+export interface EffortSavingsEstimate {
+  consolidation_type: string;
+  estimated_hours_saved: number;
+  complexity_level: 'low' | 'medium' | 'high';
+}
+
+export interface GetComponentDuplicationStatsResponse {
+  success: boolean;
+  total_duplicates: number;
+  total_unique_components: number;
+  duplication_distribution: ComponentDuplicationMetric[];
+  consolidation_progress: ConsolidationProgress[];
+  effort_savings: EffortSavingsEstimate[];
+  last_analysis: string;
+}
+
+// Activity Analytics Types
+export interface RepositoryActivityPoint {
+  date: string;
+  pattern_scans: number;
+  component_scans: number;
+  compliance_checks: number;
+}
+
+export interface ActivitySummaryByType {
+  activity_type: string;
+  count: number;
+  percentage: number;
+}
+
+export interface RepositoryActivityRanking {
+  repository_name: string;
+  total_activity: number;
+  pattern_scans: number;
+  component_scans: number;
+  compliance_checks: number;
+}
+
+export interface GetRepositoryActivitySummaryResponse {
+  success: boolean;
+  activity_timeline: RepositoryActivityPoint[];
+  activity_by_type: ActivitySummaryByType[];
+  repository_rankings: RepositoryActivityRanking[];
+  period: 'day' | 'week' | 'month';
+  total_activities: number;
 }
 
 // ============================================
@@ -868,6 +1062,96 @@ class A2AClient {
         component_type: componentType || undefined,
         limit,
         offset,
+      },
+    });
+    return response.data;
+  }
+
+  /**
+   * Get component dependencies with circular dependency detection
+   */
+  async getComponentDependencies(
+    repository: string,
+    componentName?: string,
+    analysisDepth: number = 3
+  ): Promise<GetComponentDependenciesResponse> {
+    const response = await this.client.post<GetComponentDependenciesResponse>('/a2a/execute', {
+      skill_id: 'get_component_dependencies',
+      input: {
+        repository,
+        component_name: componentName || undefined,
+        analysis_depth: analysisDepth,
+      },
+    });
+    return response.data;
+  }
+
+  // ============================================
+  // Analytics Dashboard Skills
+  // ============================================
+
+  /**
+   * Get dashboard overview with system health metrics, alerts, and highlights
+   */
+  async getDashboardOverview(): Promise<GetDashboardOverviewResponse> {
+    const response = await this.client.post<GetDashboardOverviewResponse>('/a2a/execute', {
+      skill_id: 'get_dashboard_overview',
+      input: {},
+    });
+    return response.data;
+  }
+
+  /**
+   * Get pattern adoption trends over time
+   */
+  async getPatternAdoptionTrends(
+    startDate?: string,
+    endDate?: string
+  ): Promise<GetPatternAdoptionTrendsResponse> {
+    const response = await this.client.post<GetPatternAdoptionTrendsResponse>('/a2a/execute', {
+      skill_id: 'get_pattern_adoption_trends',
+      input: {
+        start_date: startDate || undefined,
+        end_date: endDate || undefined,
+      },
+    });
+    return response.data;
+  }
+
+  /**
+   * Get pattern health summary with scores and trends
+   */
+  async getPatternHealthSummary(): Promise<GetPatternHealthSummaryResponse> {
+    const response = await this.client.post<GetPatternHealthSummaryResponse>('/a2a/execute', {
+      skill_id: 'get_pattern_health_summary',
+      input: {},
+    });
+    return response.data;
+  }
+
+  /**
+   * Get component duplication statistics and consolidation progress
+   */
+  async getComponentDuplicationStats(): Promise<GetComponentDuplicationStatsResponse> {
+    const response = await this.client.post<GetComponentDuplicationStatsResponse>('/a2a/execute', {
+      skill_id: 'get_component_duplication_stats',
+      input: {},
+    });
+    return response.data;
+  }
+
+  /**
+   * Get repository activity summary by time period
+   */
+  async getRepositoryActivitySummary(
+    period: 'day' | 'week' | 'month' = 'week',
+    limit: number = 10
+  ): Promise<GetRepositoryActivitySummaryResponse> {
+    const response = await this.client.post<GetRepositoryActivitySummaryResponse>('/a2a/execute', {
+      skill_id: 'get_repository_activity_summary',
+      input: {
+        period,
+        limit,
       },
     });
     return response.data;

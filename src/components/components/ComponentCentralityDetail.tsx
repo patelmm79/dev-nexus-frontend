@@ -69,7 +69,7 @@ export default function ComponentCentralityDetail({
           </Alert>
         )}
 
-        {data?.success && (
+        {data?.success && data.analysis && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {/* Recommendation Card */}
             <Card>
@@ -81,7 +81,7 @@ export default function ComponentCentralityDetail({
                       Current Location
                     </Typography>
                     <Chip
-                      label={data.recommendation?.from_repository || currentLocation}
+                      label={data.analysis.recommendation?.from || currentLocation}
                       variant="outlined"
                     />
                   </Box>
@@ -90,19 +90,24 @@ export default function ComponentCentralityDetail({
                       Best Location
                     </Typography>
                     <Chip
-                      label={data.best_location}
+                      label={data.analysis.best_location}
                       color="primary"
                       variant="filled"
                     />
                   </Box>
+                  {data.analysis.recommendation && (
+                    <Box>
+                      <Typography variant="subtitle2" gutterBottom>
+                        Improvement
+                      </Typography>
+                      <Chip
+                        label={`+${(data.analysis.recommendation.improvement * 100).toFixed(1)}%`}
+                        color="success"
+                        variant="filled"
+                      />
+                    </Box>
+                  )}
                 </Box>
-                {data.recommendation?.migration_details && (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2" color="textSecondary">
-                      {data.recommendation.migration_details}
-                    </Typography>
-                  </Box>
-                )}
               </CardContent>
             </Card>
 
@@ -120,44 +125,44 @@ export default function ComponentCentralityDetail({
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {data.all_scores?.map((score, index) => (
+                      {Object.entries(data.analysis.all_scores || {}).map(([repositoryName, scoreData]: [string, any]) => (
                         <TableRow
-                          key={index}
-                          selected={score.repository === data.best_location}
+                          key={repositoryName}
+                          selected={repositoryName === data.analysis.best_location}
                           sx={{
                             backgroundColor:
-                              score.repository === data.best_location
+                              repositoryName === data.analysis.best_location
                                 ? 'action.selected'
                                 : 'inherit',
                           }}
                         >
-                          <TableCell>{score.repository}</TableCell>
+                          <TableCell>{repositoryName}</TableCell>
                           <TableCell align="right">
                             <Typography
                               variant="body2"
                               sx={{
                                 fontWeight:
-                                  score.repository === data.best_location
+                                  repositoryName === data.analysis.best_location
                                     ? 'bold'
                                     : 'normal',
                                 color:
-                                  score.repository === data.best_location
+                                  repositoryName === data.analysis.best_location
                                     ? 'primary.main'
                                     : 'inherit',
                               }}
                             >
-                              {score.total_score.toFixed(3)}
+                              {scoreData.canonical_score.toFixed(3)}
                             </Typography>
                           </TableCell>
                           <TableCell>
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                              {Object.entries(score.factors || {}).map(([name, factor]: [string, any]) => (
+                              {Object.entries(scoreData.factors || {}).map(([factorName, factorValue]: [string, any]) => (
                                 <Chip
-                                  key={name}
-                                  label={`${name}: ${factor.score?.toFixed(2) || '0'}`}
+                                  key={factorName}
+                                  label={`${factorName}: ${(factorValue as number).toFixed(2)}`}
                                   size="small"
                                   variant="outlined"
-                                  title={factor.reasoning}
+                                  title={scoreData.reasoning}
                                 />
                               ))}
                             </Box>

@@ -26,6 +26,7 @@ import {
   CloudUpload as DeploymentIcon,
   Hub as AgentsIcon,
   CheckCircle as ComplianceIcon,
+  TrendingUp as AnalyticsIcon,
 } from '@mui/icons-material';
 import HealthIndicator from '../common/HealthIndicator';
 import AddRepositoryDialog from '../repository/AddRepositoryDialog';
@@ -37,6 +38,7 @@ const menuItems = [
   { text: 'Repositories', icon: <FolderIcon />, path: '/repositories' },
   { text: 'Patterns', icon: <CategoryIcon />, path: '/patterns' },
   { text: 'Components', icon: <ComponentIcon />, path: '/components' },
+  { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
   { text: 'Compliance', icon: <ComplianceIcon />, path: '/compliance' },
   { text: 'Deployment', icon: <DeploymentIcon />, path: '/deployment' },
   { text: 'Agents', icon: <AgentsIcon />, path: '/agents' },

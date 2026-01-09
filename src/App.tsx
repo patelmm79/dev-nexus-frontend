@@ -10,6 +10,7 @@ import Deployment from './pages/Deployment';
 import Agents from './pages/Agents';
 import Compliance from './pages/Compliance';
 import Components from './pages/Components';
+import Analytics from './pages/Analytics';
 import { a2aClient } from './services/a2aClient';
 
 const theme = createTheme({
@@ -63,6 +64,8 @@ function App() {
           <Route path="repositories" element={<Repositories />} />
           <Route path="patterns" element={<Patterns />} />
           <Route path="components" element={<Components />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="analytics/dependencies" element={<Analytics />} />
           <Route path="configuration" element={<Configuration />} />
           <Route path="deployment" element={<Deployment />} />
           <Route path="agents" element={<Agents />} />
