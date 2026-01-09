@@ -9,17 +9,36 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  Tabs,
+  Tab,
+  Slider,
+  Paper,
 } from '@mui/material';
 import { ExpandMore, Code } from '@mui/icons-material';
 import { useCrossRepoPatterns } from '../hooks/usePatterns';
+import PatternNetworkGraph from '../components/patterns/PatternNetworkGraph';
+import PatternDetailModal from '../components/patterns/PatternDetailModal';
 
 export default function Patterns() {
   const [searchTerm, setSearchTerm] = useState('');
-  const { data, isLoading, isError, error } = useCrossRepoPatterns();
+  const [minOccurrences, setMinOccurrences] = useState(2);
+  const [viewMode, setViewMode] = useState<'network' | 'list'>('network');
+  const [selectedPattern, setSelectedPattern] = useState<any | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const { data, isLoading, isError, error } = useCrossRepoPatterns(minOccurrences);
 
   const filteredPatterns = data?.patterns?.filter(pattern =>
     pattern.pattern_name.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
+
+  const handlePatternClick = (patternName: string) => {
+    const pattern = filteredPatterns.find(p => p.pattern_name === patternName);
+    if (pattern) {
+      setSelectedPattern(pattern);
+      setModalOpen(true);
+    }
+  };
 
   if (isError) {
     return (
@@ -38,19 +57,44 @@ export default function Patterns() {
         Discover patterns used across multiple repositories
       </Typography>
 
-      <TextField
-        fullWidth
-        label="Search patterns..."
-        variant="outlined"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        sx={{ mt: 3, mb: 3 }}
-      />
+      {/* Controls */}
+      <Paper sx={{ p: 2, mt: 3, mb: 3 }}>
+        <TextField
+          fullWidth
+          label="Search patterns..."
+          variant="outlined"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          sx={{ mb: 2 }}
+        />
+
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Minimum Repositories: {minOccurrences}
+          </Typography>
+          <Slider
+            value={minOccurrences}
+            onChange={(_, value) => setMinOccurrences(value as number)}
+            min={2}
+            max={10}
+            step={1}
+            marks
+            valueLabelDisplay="auto"
+          />
+        </Box>
+
+        <Tabs value={viewMode} onChange={(_, value) => setViewMode(value)}>
+          <Tab label="Network View" value="network" />
+          <Tab label="List View" value="list" />
+        </Tabs>
+      </Paper>
 
       {isLoading ? (
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
           <CircularProgress />
         </Box>
+      ) : viewMode === 'network' ? (
+        <PatternNetworkGraph patterns={filteredPatterns} onPatternClick={handlePatternClick} />
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {filteredPatterns.map((pattern) => (
@@ -104,6 +148,12 @@ export default function Patterns() {
           </Typography>
         </Box>
       )}
+
+      <PatternDetailModal
+        open={modalOpen}
+        pattern={selectedPattern}
+        onClose={() => setModalOpen(false)}
+      />
     </Box>
   );
 }

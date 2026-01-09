@@ -14,9 +14,11 @@ import {
   FormGroup,
   FormControlLabel,
   Slider,
+  Button,
 } from '@mui/material';
 import { useDetectMisplacedComponents } from '../../hooks/useComponentSensibility';
-import { useListComponents } from '../../hooks/usePatterns';
+import { useListComponents, useSuggestPattern, useCreatePattern, useCrossRepoPatterns } from '../../hooks/usePatterns';
+import PatternSuggestionModal from '../patterns/PatternSuggestionModal';
 
 interface ComponentDetectionProps {
   repository: string;
@@ -31,6 +33,9 @@ const ISSUE_TYPES = [
 export default function ComponentDetection({ repository }: ComponentDetectionProps) {
   const [selectedIssueTypes, setSelectedIssueTypes] = useState<string[]>(['duplicated', 'misplaced']);
   const [similarityThreshold, setSimilarityThreshold] = useState(50);
+  const [suggestionModalOpen, setSuggestionModalOpen] = useState(false);
+  const [currentSuggestion, setCurrentSuggestion] = useState<any>(null);
+  const [analyzingComponent, setAnalyzingComponent] = useState<string | null>(null);
 
   const { data, isLoading, isError, error } = useDetectMisplacedComponents(
     repository,
@@ -41,6 +46,10 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
 
   const { data: componentsData } = useListComponents(repository);
   const totalComponentsScanned = componentsData?.total_count || 0;
+
+  const suggestMutation = useSuggestPattern();
+  const createMutation = useCreatePattern();
+  const { data: patternsData } = useCrossRepoPatterns();
 
   const filteredIssues = useMemo(() => {
     if (!data?.component_issues) return [];
@@ -66,6 +75,42 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
       default:
         return 'info';
     }
+  };
+
+  const handleSuggestPattern = async (issue: any) => {
+    setAnalyzingComponent(issue.component_name);
+    setSuggestionModalOpen(true);
+
+    try {
+      const suggestion = await suggestMutation.mutateAsync({
+        component_name: issue.component_name,
+        repository,
+        duplication_count: data?.total_duplicates || 0,
+        component_type: issue.issue_type,
+        similarity_score: issue.similarity_score,
+      });
+      setCurrentSuggestion(suggestion);
+    } catch (error) {
+      setSuggestionModalOpen(false);
+    } finally {
+      setAnalyzingComponent(null);
+    }
+  };
+
+  const handleCreatePattern = async (patternName: string, patternDescription: string) => {
+    if (!currentSuggestion) return;
+
+    await createMutation.mutateAsync({
+      component_name: analyzingComponent!,
+      repository,
+      pattern_name: patternName,
+      pattern_description: patternDescription,
+      duplication_count: data?.total_duplicates || 0,
+      component_type: 'duplicated',
+    });
+
+    setSuggestionModalOpen(false);
+    setCurrentSuggestion(null);
   };
 
   if (isLoading) {
@@ -129,6 +174,29 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
             valueLabelDisplay="auto"
           />
         </Box>
+      </Paper>
+
+      {/* Related Cross-Repo Patterns */}
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          Related Cross-Repo Patterns
+        </Typography>
+        {patternsData?.patterns && patternsData.patterns.length > 0 ? (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {patternsData.patterns.slice(0, 5).map((pattern) => (
+              <Chip
+                key={pattern.pattern_name}
+                label={`${pattern.pattern_name} (${pattern.occurrences})`}
+                variant="outlined"
+                color="primary"
+              />
+            ))}
+          </Box>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            No cross-repository patterns found yet.
+          </Typography>
+        )}
       </Paper>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2 }}>
@@ -241,6 +309,20 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
                   </Typography>
                   <Typography variant="body2">{issue.reason}</Typography>
                 </Box>
+
+                {issue.issue_type === 'duplicated' && issue.similarity_score >= 0.7 && (
+                  <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      onClick={() => handleSuggestPattern(issue)}
+                      disabled={analyzingComponent === issue.component_name}
+                    >
+                      {analyzingComponent === issue.component_name ? 'Analyzing...' : 'Suggest as Pattern'}
+                    </Button>
+                  </Box>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -250,6 +332,18 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
           <Typography color="textSecondary">No component issues found with selected filters.</Typography>
         </Paper>
       )}
+
+      <PatternSuggestionModal
+        open={suggestionModalOpen}
+        suggestion={currentSuggestion}
+        isAnalyzing={suggestMutation.isPending}
+        onClose={() => {
+          setSuggestionModalOpen(false);
+          setCurrentSuggestion(null);
+          setAnalyzingComponent(null);
+        }}
+        onCreatePattern={handleCreatePattern}
+      />
     </Box>
   );
 }

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { a2aClient, AddLessonLearnedInput } from '../services/a2aClient';
+import { a2aClient, AddLessonLearnedInput, SuggestPatternFromComponentInput, CreatePatternFromComponentInput } from '../services/a2aClient';
 import toast from 'react-hot-toast';
 
 /**
@@ -323,5 +323,41 @@ export function useListComponents(
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     enabled: !!repository, // Only fetch if repository is provided
+  });
+}
+
+/**
+ * Mutation hook to suggest pattern from component
+ */
+export function useSuggestPattern() {
+  return useMutation({
+    mutationFn: (input: SuggestPatternFromComponentInput) =>
+      a2aClient.suggestPatternFromComponent(input),
+    onError: (error: Error) => {
+      toast.error(`Failed to analyze pattern: ${error.message}`);
+    },
+  });
+}
+
+/**
+ * Mutation hook to create pattern from component
+ */
+export function useCreatePattern() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: CreatePatternFromComponentInput) =>
+      a2aClient.createPatternFromComponent(input),
+    onSuccess: async (data) => {
+      // Invalidate cross-repo patterns to refresh pattern list
+      await queryClient.invalidateQueries({ queryKey: ['crossRepoPatterns'], exact: false });
+      // Refetch immediately for better UX
+      await queryClient.refetchQueries({ queryKey: ['crossRepoPatterns'], exact: false });
+
+      toast.success(data.message || 'Pattern created successfully!');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to create pattern: ${error.message}`);
+    },
   });
 }

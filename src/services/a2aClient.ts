@@ -355,6 +355,45 @@ export interface RecommendConsolidationPlanResponse {
 }
 
 // ============================================
+// Pattern Workflow Types
+// ============================================
+
+export interface SuggestPatternFromComponentInput {
+  component_name: string;
+  repository: string;
+  duplication_count: number;
+  component_type: string;
+  similarity_score: number;
+}
+
+export interface PatternSuggestion {
+  pattern_name: string;
+  description: string;
+  worthiness_score: number; // 0-10
+  rationale: string;
+  affected_repositories: string[];
+  estimated_effort: 'low' | 'medium' | 'high';
+  benefits: string[];
+  implementation_notes: string[];
+}
+
+export interface CreatePatternFromComponentInput {
+  component_name: string;
+  repository: string;
+  pattern_name: string;
+  pattern_description: string;
+  duplication_count: number;
+  component_type: string;
+}
+
+export interface CreatePatternResponse {
+  success: boolean;
+  pattern_name: string;
+  message: string;
+  repositories_affected: string[];
+}
+
+// ============================================
 // API Client Class
 // ============================================
 
@@ -696,6 +735,28 @@ class A2AClient {
         limit,
         offset,
       },
+    });
+    return response.data;
+  }
+
+  /**
+   * Suggest creating a pattern from a duplicated component
+   */
+  async suggestPatternFromComponent(input: SuggestPatternFromComponentInput): Promise<PatternSuggestion> {
+    const response = await this.client.post<PatternSuggestion>('/a2a/execute', {
+      skill_id: 'suggest_pattern_from_component',
+      input,
+    });
+    return response.data;
+  }
+
+  /**
+   * Create a new cross-repository pattern from a component
+   */
+  async createPatternFromComponent(input: CreatePatternFromComponentInput): Promise<CreatePatternResponse> {
+    const response = await this.client.post<CreatePatternResponse>('/a2a/execute', {
+      skill_id: 'create_pattern_from_component',
+      input,
     });
     return response.data;
   }
