@@ -1111,6 +1111,21 @@ class A2AClient {
 
   /**
    * Get pattern adoption trends over time
+   *
+   * API Response Structure:
+   * {
+   *   "success": true,
+   *   "adoption_timeline": [
+   *     { "date": "2025-01-01", "pattern_count": 5, "repository_count": 3, "new_patterns": 1 },
+   *     ...
+   *   ],
+   *   "growth_rates": [
+   *     { "period": "week", "growth_percentage": 10.5, "adoption_velocity": 2.1 },
+   *     ...
+   *   ],
+   *   "start_date": "2025-01-01",
+   *   "end_date": "2025-01-31"
+   * }
    */
   async getPatternAdoptionTrends(
     startDate?: string,
@@ -1128,6 +1143,35 @@ class A2AClient {
 
   /**
    * Get pattern health summary with scores and trends
+   *
+   * API Response Structure:
+   * {
+   *   "success": true,
+   *   "time_range_days": 30,
+   *   "overall_health": {
+   *     "average_score": 0.95,
+   *     "status": "healthy",
+   *     "critical_count": 0,
+   *     "warning_count": 2,
+   *     "healthy_count": 10
+   *   },
+   *   "patterns_by_health": [
+   *     { "pattern_name": "singleton", "health_score": 0.98 },
+   *     ...
+   *   ],
+   *   "health_trends": [
+   *     { "week": "2025-01-02", "average_score": 0.95 },
+   *     { "week": "2025-01-09", "average_score": 1.0 },
+   *     ...
+   *   ],
+   *   "top_issue_types": [
+   *     { "type": "timeout", "count": 5 },
+   *     { "type": "error", "count": 2 },
+   *     ...
+   *   ]
+   * }
+   *
+   * Note: Field names are critical—use exactly as shown (week, not date; patterns_by_health, not pattern_scores; top_issue_types, not issue_breakdown)
    */
   async getPatternHealthSummary(): Promise<GetPatternHealthSummaryResponse> {
     const response = await this.client.post<GetPatternHealthSummaryResponse>('/a2a/execute', {
@@ -1139,6 +1183,12 @@ class A2AClient {
 
   /**
    * Get component duplication statistics and consolidation progress
+   *
+   * API Response includes:
+   * - duplication_distribution: Array of duplication metrics by level
+   * - consolidation_progress: Array of consolidation phase progress
+   * - effort_savings: Array of estimated hours saved
+   * - total_duplicates, total_unique_components: Summary counts
    */
   async getComponentDuplicationStats(): Promise<GetComponentDuplicationStatsResponse> {
     const response = await this.client.post<GetComponentDuplicationStatsResponse>('/a2a/execute', {
@@ -1150,6 +1200,12 @@ class A2AClient {
 
   /**
    * Get repository activity summary by time period
+   *
+   * API Response includes:
+   * - activity_timeline: Array of daily/weekly/monthly activity points
+   * - activity_by_type: Breakdown of activities by type
+   * - repository_rankings: Ranked list of repositories by activity
+   * - Period: "day" | "week" | "month"
    */
   async getRepositoryActivitySummary(
     period: 'day' | 'week' | 'month' = 'week',

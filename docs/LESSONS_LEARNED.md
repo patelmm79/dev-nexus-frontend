@@ -54,6 +54,31 @@ Key Technical Lessons
 11. Bundle-size awareness
 - Vite reported large chunks (>500KB). Consider code-splitting dynamic imports for large feature pages and move rarely-used libs to dynamic import.
 
+12. API contract verification is mandatory—never make educated guesses
+- **Root cause of failures:** Assuming TypeScript types are correct without verifying them against actual API responses.
+- **Real example:** Pattern health analytics expected `pattern_scores` and `issue_breakdown`, but API actually returned `patterns_by_health` and `top_issue_types`. Expected field `health_trends[].date` but API returned `health_trends[].week`. Charts silently failed to render because code was accessing undefined fields that defaulted to `undefined`.
+- **Why it happened:** Trusted existing TypeScript interfaces without checking. Made defensive assumptions (added array checks, fallbacks) instead of verifying the actual data contract first. Made educated guesses that things were correct because documentation said they were.
+- **Correct debugging procedure when features don't display data:**
+  1. Open Browser DevTools → Network tab
+  2. Find the API request (search for `skill_id` in request)
+  3. Click on request → Response tab
+  4. Copy the complete JSON response
+  5. Compare field names against TypeScript interface in `src/services/a2aClient.ts`
+  6. If field names differ, update the interface immediately
+  7. Transform data in component if needed (e.g., `week` → `date`)
+  8. Never assume types are correct
+  9. Never make educated guesses about API structure
+- **Why this matters:**
+  - Defensive code (array checks, fallbacks) masks the real problem
+  - Wasted 3+ iterations fixing symptoms instead of the root cause
+  - Should be caught in the first debugging attempt if you verify the response
+- **Prevention:**
+  - Add JSDoc examples with actual API response JSON to every API client method
+  - Document exact field names and types returned by backend
+  - When backend API changes, TypeScript interfaces MUST be updated simultaneously
+  - Code review must include verification that types match actual responses
+- **Key principle:** The actual API response is the source of truth. If it differs from TypeScript types, the types are wrong—not the API. Never trust code or documentation over the actual running API response.
+
 Process Lessons
 - Make small, atomic edits and re-run `tsc`/`npm run build` frequently to isolate regressions.
 - Use the repository search to find duplicate copies before adding supplier components.

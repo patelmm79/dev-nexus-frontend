@@ -196,6 +196,42 @@ Ensure backend CORS includes your Vercel/Netlify domain
 
 ## Troubleshooting
 
+### Data Not Displaying (Empty Charts/Lists)
+**Critical:** When a feature requests data but displays nothing, you MUST verify the actual API response first. Never make educated guesses about data structure.
+
+**Debugging procedure:**
+1. Open Browser DevTools (F12) → Network tab
+2. Perform the action that triggers the API call
+3. Find the request with the relevant `skill_id` in the request body
+4. Click the request → Response tab
+5. Copy the complete JSON response
+6. Open `src/services/a2aClient.ts`
+7. Find the TypeScript interface matching your skill (e.g., `GetPatternHealthSummaryResponse`)
+8. Compare field names in actual response vs. the interface
+9. **If field names don't match:** Update the interface to match reality, not the other way around
+10. If transformation is needed (e.g., `week` → `date`), add it in the component with a comment explaining the mismatch
+
+**Why this matters:**
+- Defensive code (array checks, try/catch) masks the real problem
+- You will waste multiple iterations if you guess instead of verify
+- The actual API response is always the source of truth
+
+**Example: WRONG approach**
+```typescript
+// ❌ Defensive but doesn't fix the root problem
+const data = apiResponse.data?.field_name || [];
+const transformed = data.map(...); // Still fails if field doesn't exist
+```
+
+**Example: RIGHT approach**
+```typescript
+// ✅ First, verify actual response has this field
+// (Check Network tab to confirm the field exists in response)
+const patterns = Array.isArray(adoptionData.data?.adoption_timeline)
+  ? adoptionData.data.adoption_timeline
+  : [];
+```
+
 ### CORS Errors
 If you see "CORS policy: No 'Access-Control-Allow-Origin'" errors:
 - Verify backend's `CORS_ORIGINS` environment variable includes your frontend URL
