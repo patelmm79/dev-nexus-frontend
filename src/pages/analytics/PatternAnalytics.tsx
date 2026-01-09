@@ -29,10 +29,26 @@ export default function PatternAnalytics() {
     );
   }
 
-  const adoptionTimeline = Array.isArray(adoptionData.data?.adoption_timeline) ? adoptionData.data.adoption_timeline : [];
-  const healthTrends = Array.isArray(healthData.data?.health_trends) ? healthData.data.health_trends : [];
-  const patternScores = Array.isArray(healthData.data?.pattern_scores) ? healthData.data.pattern_scores : [];
-  const issueBreakdown = Array.isArray(healthData.data?.issue_breakdown) ? healthData.data.issue_breakdown : [];
+  if ((!adoptionData.data?.success || !healthData.data?.success) && !isLoading) {
+    return (
+      <Alert severity="warning">
+        Pattern analytics data is unavailable
+      </Alert>
+    );
+  }
+
+  const adoptionTimeline = Array.isArray(adoptionData.data?.adoption_timeline)
+    ? adoptionData.data.adoption_timeline
+    : [];
+  const healthTrends = Array.isArray(healthData.data?.health_trends)
+    ? healthData.data.health_trends
+    : [];
+  const patternScores = Array.isArray(healthData.data?.pattern_scores)
+    ? healthData.data.pattern_scores
+    : [];
+  const issueBreakdown = Array.isArray(healthData.data?.issue_breakdown)
+    ? healthData.data.issue_breakdown
+    : [];
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
