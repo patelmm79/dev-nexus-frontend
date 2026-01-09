@@ -13,24 +13,34 @@ import {
   Tab,
   Slider,
   Paper,
+  FormControl,
+  FormControlLabel,
+  RadioGroup,
+  Radio,
 } from '@mui/material';
 import { ExpandMore, Code } from '@mui/icons-material';
 import { useCrossRepoPatterns } from '../hooks/usePatterns';
 import PatternNetworkGraph from '../components/patterns/PatternNetworkGraph';
 import PatternDetailModal from '../components/patterns/PatternDetailModal';
+import PatternStatusChip from '../components/patterns/PatternStatusChip';
 
 export default function Patterns() {
   const [searchTerm, setSearchTerm] = useState('');
   const [minOccurrences, setMinOccurrences] = useState(2);
   const [viewMode, setViewMode] = useState<'network' | 'list'>('network');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'deprecated' | 'archived'>('all');
   const [selectedPattern, setSelectedPattern] = useState<any | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
   const { data, isLoading, isError, error } = useCrossRepoPatterns(minOccurrences);
 
-  const filteredPatterns = data?.patterns?.filter(pattern =>
-    pattern.pattern_name.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const filteredPatterns = data?.patterns?.filter(pattern => {
+    const matchesSearch = pattern.pattern_name.toLowerCase().includes(searchTerm.toLowerCase());
+    // Status filter - for now all patterns are considered 'active'
+    // When backend provides status field, we can filter by it
+    const matchesStatus = statusFilter === 'all' || statusFilter === 'active';
+    return matchesSearch && matchesStatus;
+  }) || [];
 
   const handlePatternClick = (patternName: string) => {
     const pattern = filteredPatterns.find(p => p.pattern_name === patternName);
@@ -83,6 +93,24 @@ export default function Patterns() {
           />
         </Box>
 
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Status Filter
+          </Typography>
+          <FormControl component="fieldset" size="small">
+            <RadioGroup
+              row
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+            >
+              <FormControlLabel value="all" control={<Radio />} label="All" />
+              <FormControlLabel value="active" control={<Radio />} label="Active" />
+              <FormControlLabel value="deprecated" control={<Radio />} label="Deprecated" />
+              <FormControlLabel value="archived" control={<Radio />} label="Archived" />
+            </RadioGroup>
+          </FormControl>
+        </Box>
+
         <Tabs value={viewMode} onChange={(_, value) => setViewMode(value)}>
           <Tab label="Network View" value="network" />
           <Tab label="List View" value="list" />
@@ -102,12 +130,13 @@ export default function Patterns() {
               <AccordionSummary expandIcon={<ExpandMore />}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
                   <Code />
-                  <Typography variant="h6">{pattern.pattern_name}</Typography>
+                  <Typography variant="h6" sx={{ flex: 1 }}>{pattern.pattern_name}</Typography>
                   <Chip
                     label={`${pattern.occurrences} repos`}
                     color="primary"
                     size="small"
                   />
+                  <PatternStatusChip status="active" />
                 </Box>
               </AccordionSummary>
               <AccordionDetails>

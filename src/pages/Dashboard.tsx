@@ -1,15 +1,20 @@
-import { Typography, Box } from '@mui/material';
+import { Typography, Box, Button, Card, CardContent } from '@mui/material';
 import {
   CheckCircle,
   Folder,
   Category,
   Hub,
+  TrendingUp,
+  Search as SearchIcon,
+  Visibility as VisibilityIcon,
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { useHealth, useRepositories, useCrossRepoPatterns, useExternalAgents } from '../hooks/usePatterns';
 import StatCard from '../components/dashboard/StatCard';
 import RecentActivity from '../components/agents/RecentActivity';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { data: health, isLoading: healthLoading } = useHealth();
   const { data: repos, isLoading: reposLoading } = useRepositories();
   const { data: patterns, isLoading: patternsLoading } = useCrossRepoPatterns();
@@ -18,6 +23,11 @@ export default function Dashboard() {
   const healthyAgents = Array.isArray(agents?.agents)
     ? agents!.agents.filter(a => a.status === 'healthy').length
     : 0;
+
+  // Calculate unique pattern variations
+  const uniqueVariations = new Set(
+    patterns?.patterns?.flatMap(p => p.variations) || []
+  ).size;
 
   return (
     <Box>
@@ -60,6 +70,14 @@ export default function Dashboard() {
           color="info"
           loading={agentsLoading}
         />
+
+        <StatCard
+          title="Pattern Variations"
+          value={uniqueVariations}
+          icon={<TrendingUp />}
+          color="warning"
+          loading={patternsLoading}
+        />
       </Box>
 
       <Box
@@ -79,6 +97,36 @@ export default function Dashboard() {
           Navigate using the sidebar to explore repositories, patterns, deployments, and more.
         </Typography>
       </Box>
+
+      <Card sx={{ mt: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Quick Actions
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+            <Button
+              variant="contained"
+              startIcon={<VisibilityIcon />}
+              onClick={() => navigate('/patterns')}
+            >
+              Explore Patterns
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<SearchIcon />}
+              onClick={() => navigate('/components')}
+            >
+              Component Detection
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => navigate('/repositories')}
+            >
+              Manage Repositories
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
 
       <Box sx={{ mt: 4 }}>
         <RecentActivity defaultLimit={10} />

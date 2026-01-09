@@ -394,6 +394,62 @@ export interface CreatePatternResponse {
 }
 
 // ============================================
+// Pattern Versioning Types
+// ============================================
+
+export interface PatternVersionChange {
+  field: string;
+  old_value: string;
+  new_value: string;
+}
+
+export interface PatternVersion {
+  version_number: number;
+  pattern_name: string;
+  description: string;
+  status: 'active' | 'deprecated' | 'archived';
+  created_at: string;
+  created_by: string;
+  change_summary: string;
+  changes: PatternVersionChange[];
+}
+
+export interface UpdatePatternInput {
+  pattern_name: string;
+  description?: string;
+  keywords?: string[];
+  change_summary: string;
+}
+
+export interface DeprecatePatternInput {
+  pattern_name: string;
+  reason: string;
+  replacement_pattern?: string;
+  migration_notes?: string[];
+}
+
+export interface GetPatternHistoryResponse {
+  success: boolean;
+  pattern_name: string;
+  versions: PatternVersion[];
+  total_versions: number;
+}
+
+export interface UpdatePatternResponse {
+  success: boolean;
+  pattern_name: string;
+  new_version: number;
+  message: string;
+}
+
+export interface DeprecatePatternResponse {
+  success: boolean;
+  pattern_name: string;
+  affected_repositories: string[];
+  message: string;
+}
+
+// ============================================
 // API Client Class
 // ============================================
 
@@ -757,6 +813,50 @@ class A2AClient {
     const response = await this.client.post<CreatePatternResponse>('/a2a/execute', {
       skill_id: 'create_pattern_from_component',
       input,
+    });
+    return response.data;
+  }
+
+  /**
+   * Get pattern version history
+   */
+  async getPatternHistory(patternName: string): Promise<GetPatternHistoryResponse> {
+    const response = await this.client.post<GetPatternHistoryResponse>('/a2a/execute', {
+      skill_id: 'get_pattern_history',
+      input: { pattern_name: patternName },
+    });
+    return response.data;
+  }
+
+  /**
+   * Update an existing pattern (creates new version)
+   */
+  async updatePattern(input: UpdatePatternInput): Promise<UpdatePatternResponse> {
+    const response = await this.client.post<UpdatePatternResponse>('/a2a/execute', {
+      skill_id: 'update_pattern',
+      input,
+    });
+    return response.data;
+  }
+
+  /**
+   * Deprecate a pattern
+   */
+  async deprecatePattern(input: DeprecatePatternInput): Promise<DeprecatePatternResponse> {
+    const response = await this.client.post<DeprecatePatternResponse>('/a2a/execute', {
+      skill_id: 'deprecate_pattern',
+      input,
+    });
+    return response.data;
+  }
+
+  /**
+   * Archive a deprecated pattern
+   */
+  async archivePattern(patternName: string): Promise<{ success: boolean; message: string }> {
+    const response = await this.client.post('/a2a/execute', {
+      skill_id: 'archive_pattern',
+      input: { pattern_name: patternName },
     });
     return response.data;
   }

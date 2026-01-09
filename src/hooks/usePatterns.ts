@@ -1,5 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { a2aClient, AddLessonLearnedInput, SuggestPatternFromComponentInput, CreatePatternFromComponentInput } from '../services/a2aClient';
+import {
+  a2aClient,
+  AddLessonLearnedInput,
+  SuggestPatternFromComponentInput,
+  CreatePatternFromComponentInput,
+  UpdatePatternInput,
+  DeprecatePatternInput,
+} from '../services/a2aClient';
 import toast from 'react-hot-toast';
 
 /**
@@ -358,6 +365,109 @@ export function useCreatePattern() {
     },
     onError: (error: Error) => {
       toast.error(`Failed to create pattern: ${error.message}`);
+    },
+  });
+}
+
+/**
+ * Hook to fetch pattern version history
+ */
+export function usePatternHistory(patternName: string) {
+  return useQuery({
+    queryKey: ['patternHistory', patternName],
+    queryFn: () => a2aClient.getPatternHistory(patternName),
+    enabled: !!patternName,
+    staleTime: 30 * 60 * 1000, // 30 minutes
+  });
+}
+
+/**
+ * Mutation hook to update a pattern
+ */
+export function useUpdatePattern() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: UpdatePatternInput) => a2aClient.updatePattern(input),
+    onSuccess: async (data, variables) => {
+      // Invalidate pattern history
+      await queryClient.invalidateQueries({
+        queryKey: ['patternHistory', variables.pattern_name],
+      });
+      // Invalidate cross-repo patterns to refresh pattern list
+      await queryClient.invalidateQueries({
+        queryKey: ['crossRepoPatterns'],
+        exact: false,
+      });
+      // Refetch immediately
+      await queryClient.refetchQueries({
+        queryKey: ['crossRepoPatterns'],
+        exact: false,
+      });
+
+      toast.success(data.message || `Pattern updated to v${data.new_version}`);
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update pattern: ${error.message}`);
+    },
+  });
+}
+
+/**
+ * Mutation hook to deprecate a pattern
+ */
+export function useDeprecatePattern() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: DeprecatePatternInput) => a2aClient.deprecatePattern(input),
+    onSuccess: async (data, variables) => {
+      // Invalidate related queries
+      await queryClient.invalidateQueries({
+        queryKey: ['patternHistory', variables.pattern_name],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['crossRepoPatterns'],
+        exact: false,
+      });
+      await queryClient.refetchQueries({
+        queryKey: ['crossRepoPatterns'],
+        exact: false,
+      });
+
+      toast.success(
+        data.message ||
+          `Pattern deprecated. ${data.affected_repositories.length} repositories affected.`
+      );
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to deprecate pattern: ${error.message}`);
+    },
+  });
+}
+
+/**
+ * Mutation hook to archive a pattern
+ */
+export function useArchivePattern() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (patternName: string) => a2aClient.archivePattern(patternName),
+    onSuccess: async (data) => {
+      await queryClient.invalidateQueries({
+        queryKey: ['crossRepoPatterns'],
+        exact: false,
+      });
+      await queryClient.refetchQueries({
+        queryKey: ['crossRepoPatterns'],
+        exact: false,
+      });
+
+      toast.success(data.message || 'Pattern archived successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to archive pattern: ${error.message}`);
     },
   });
 }
