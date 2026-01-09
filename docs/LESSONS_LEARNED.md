@@ -23,6 +23,8 @@ Key Technical Lessons
 5. Use a central API client (and keep it typed)
 - Centralizing `executeSkill`, `addRepository`, `healthCheckExternal` in `src/services/a2aClient.ts` reduces duplicated axios logic and makes auth header handling consistent.
 - Ensure the client exports typed functions so hooks/components can rely on them.
+- **Critical:** TypeScript response types must match the actual backend response field names exactly. Mismatches (e.g., `total` vs `total_count`) cause silent failures where code accesses undefined fields, defaulting to 0.
+- Always verify API response shape matches types before deploying. Use backend documentation or inspect actual API responses in Network tab.
 
 6. React Query usage & side-effects
 - Mutations **must** invalidate related queries on success (e.g., patterns, repositories) to keep UI in sync. This is not optional—without invalidation, the UI will show stale data even though the backend has been updated.
@@ -36,14 +38,20 @@ Key Technical Lessons
 - Fix: extract the content into a separate component that calls the hook at the component level, then render that component from the map.
 - This ensures hooks are called in the same order on every render.
 
-8. Local persistence and limits
+8. Backend operations that change state should log activity events
+- Skills that modify state (e.g., `scan_repository_components`, `add_lesson_learned`) should automatically log activity events.
+- The frontend can invalidate and refetch data, but users expect to see audit trails in recent activity feeds.
+- Ensure backend logs events with timestamps and details whenever significant operations complete.
+- Without activity logging, users can't verify when operations occurred or track system changes over time.
+
+9. Local persistence and limits
 - Execution history stored in `localStorage` needs size capping and try/catch to avoid failures in restrictive browsers.
 
-9. Vercel deployment protection can block automated checks
+10. Vercel deployment protection can block automated checks
 - Protected deployments require a bypass token or SSO redirect; automated smoke tests must use the bypass token URL pattern.
 - Store notes about how to obtain and use the bypass token in docs/DEPLOYMENT.md (or use environment-based preview links for CI).
 
-10. Bundle-size awareness
+11. Bundle-size awareness
 - Vite reported large chunks (>500KB). Consider code-splitting dynamic imports for large feature pages and move rarely-used libs to dynamic import.
 
 Process Lessons
