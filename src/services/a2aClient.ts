@@ -737,13 +737,15 @@ class A2AClient {
 
   /**
    * Analyze component centrality with 6-factor scoring
+   * Pass empty string or "*" for component_name to analyze all components
    */
   async analyzeComponentCentrality(
-    repository: string
+    repository: string,
+    component_name: string = ''
   ): Promise<AnalyzeComponentCentralityResponse> {
     const response = await this.client.post<AnalyzeComponentCentralityResponse>('/a2a/execute', {
       skill_id: 'analyze_component_centrality',
-      input: { repository },
+      input: { repository, component_name },
     });
     return response.data;
   }
