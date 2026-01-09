@@ -7,43 +7,72 @@ import toast from 'react-hot-toast';
 // ============================================
 
 /**
- * Fetch misplaced components for a repository
+ * Fetch list of components with optional filtering
+ */
+export function useListComponents(
+  repository?: string,
+  componentType?: string,
+  limit: number = 100,
+  offset: number = 0
+) {
+  return useQuery({
+    queryKey: ['listComponents', repository, componentType, limit, offset],
+    queryFn: () => a2aClient.listComponents(repository, componentType, limit, offset),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
+/**
+ * Detect misplaced and duplicated components across repositories
  */
 export function useDetectMisplacedComponents(
-  repository: string,
-  filters?: {
-    component_type?: string[];
-    similarity_threshold?: number;
+  repository?: string,
+  options?: {
+    component_types?: string[];
+    min_similarity_score?: number;
+    include_diverged?: boolean;
+    top_k_matches?: number;
   }
 ) {
   return useQuery({
-    queryKey: ['misplacedComponents', repository, filters],
-    queryFn: () => a2aClient.detectMisplacedComponents(repository, filters),
-    enabled: !!repository,
+    queryKey: ['misplacedComponents', repository, options],
+    queryFn: () => a2aClient.detectMisplacedComponents(repository, options),
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 }
 
 /**
- * Fetch component centrality analysis with 6-factor scoring
+ * Analyze a specific component's centrality and optimal location
  */
-export function useAnalyzeComponentCentrality(repository: string) {
+export function useAnalyzeComponentCentrality(
+  component_name: string,
+  current_location: string,
+  candidate_locations?: string[]
+) {
   return useQuery({
-    queryKey: ['componentCentrality', repository],
-    queryFn: () => a2aClient.analyzeComponentCentrality(repository),
-    enabled: !!repository,
+    queryKey: ['componentCentrality', component_name, current_location, candidate_locations],
+    queryFn: () => a2aClient.analyzeComponentCentrality(component_name, current_location, candidate_locations),
+    enabled: !!component_name && !!current_location,
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 }
 
 /**
- * Fetch consolidation plan recommendations
+ * Fetch consolidation plan for a specific component
  */
-export function useRecommendConsolidationPlan(repository: string) {
+export function useRecommendConsolidationPlan(
+  component_name: string,
+  from_repository: string,
+  options?: {
+    to_repository?: string;
+    include_impact_analysis?: boolean;
+    include_deep_analysis?: boolean;
+  }
+) {
   return useQuery({
-    queryKey: ['consolidationPlan', repository],
-    queryFn: () => a2aClient.recommendConsolidationPlan(repository),
-    enabled: !!repository,
+    queryKey: ['consolidationPlan', component_name, from_repository, options],
+    queryFn: () => a2aClient.recommendConsolidationPlan(component_name, from_repository, options),
+    enabled: !!component_name && !!from_repository,
     staleTime: 15 * 60 * 1000, // 15 minutes
   });
 }
@@ -60,15 +89,17 @@ export function useDetectMisplacedComponentsMutation() {
 
   return useMutation({
     mutationFn: (params: {
-      repository: string;
-      filters?: {
-        component_type?: string[];
-        similarity_threshold?: number;
+      repository?: string;
+      options?: {
+        component_types?: string[];
+        min_similarity_score?: number;
+        include_diverged?: boolean;
+        top_k_matches?: number;
       };
-    }) => a2aClient.detectMisplacedComponents(params.repository, params.filters),
+    }) => a2aClient.detectMisplacedComponents(params.repository, params.options),
     onSuccess: (data, variables) => {
       queryClient.setQueryData(
-        ['misplacedComponents', variables.repository, variables.filters],
+        ['misplacedComponents', variables.repository, variables.options],
         data
       );
       if (data.success) {
@@ -90,9 +121,13 @@ export function useAnalyzeComponentCentralityMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (repository: string) => a2aClient.analyzeComponentCentrality(repository),
-    onSuccess: (data, repository) => {
-      queryClient.setQueryData(['componentCentrality', repository], data);
+    mutationFn: (params: {
+      component_name: string;
+      current_location: string;
+      candidate_locations?: string[];
+    }) => a2aClient.analyzeComponentCentrality(params.component_name, params.current_location, params.candidate_locations),
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(['componentCentrality', variables.component_name, variables.current_location, variables.candidate_locations], data);
       if (data.success) {
         toast.success('Centrality analysis completed!');
       } else {
@@ -112,9 +147,17 @@ export function useRecommendConsolidationPlanMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (repository: string) => a2aClient.recommendConsolidationPlan(repository),
-    onSuccess: (data, repository) => {
-      queryClient.setQueryData(['consolidationPlan', repository], data);
+    mutationFn: (params: {
+      component_name: string;
+      from_repository: string;
+      options?: {
+        to_repository?: string;
+        include_impact_analysis?: boolean;
+        include_deep_analysis?: boolean;
+      };
+    }) => a2aClient.recommendConsolidationPlan(params.component_name, params.from_repository, params.options),
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(['consolidationPlan', variables.component_name, variables.from_repository, variables.options], data);
       if (data.success) {
         toast.success('Consolidation plan generated!');
       } else {
@@ -127,33 +170,3 @@ export function useRecommendConsolidationPlanMutation() {
   });
 }
 
-// ============================================
-// Utility Hooks for Combined Data
-// ============================================
-
-/**
- * Fetch all component analysis data for a repository
- */
-export function useComponentAnalysis(repository: string) {
-  const misplacedComponents = useDetectMisplacedComponents(repository);
-  const componentCentrality = useAnalyzeComponentCentrality(repository);
-  const consolidationPlan = useRecommendConsolidationPlan(repository);
-
-  return {
-    misplacedComponents,
-    componentCentrality,
-    consolidationPlan,
-    isLoading:
-      misplacedComponents.isLoading ||
-      componentCentrality.isLoading ||
-      consolidationPlan.isLoading,
-    isError:
-      misplacedComponents.isError ||
-      componentCentrality.isError ||
-      consolidationPlan.isError,
-    error:
-      misplacedComponents.error ||
-      componentCentrality.error ||
-      consolidationPlan.error,
-  };
-}

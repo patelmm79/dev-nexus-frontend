@@ -354,6 +354,59 @@ export interface RecommendConsolidationPlanResponse {
   risks: string[];
 }
 
+// Single-component centrality analysis response
+export interface ComponentCentralityFactor {
+  score: number;
+  weight: number;
+  reasoning: string;
+}
+
+export interface ComponentLocationScore {
+  repository: string;
+  total_score: number;
+  factors: Record<string, ComponentCentralityFactor>;
+}
+
+export interface ComponentCentralityRecommendation {
+  from_repository: string;
+  to_repository: string;
+  improvement_metrics: Record<string, any>;
+  migration_details: string;
+}
+
+export interface ComponentCentralityAnalysisResponse {
+  success: boolean;
+  component_name: string;
+  best_location: string;
+  all_scores: ComponentLocationScore[];
+  recommendation: ComponentCentralityRecommendation;
+  analysis_timestamp: string;
+}
+
+// Single-component consolidation plan response
+export interface ConsolidationPhaseDetail {
+  phase: number;
+  phase_name: 'Analyze' | 'Merge' | 'Update' | 'Monitor';
+  tasks: string[];
+  blockers: string[];
+  estimated_effort_hours: number;
+}
+
+export interface ComponentConsolidationPlanResponse {
+  success: boolean;
+  component_name: string;
+  consolidation_recommendation_id: string;
+  from_repository: string;
+  to_repository: string;
+  confidence: number;
+  priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  phases: ConsolidationPhaseDetail[];
+  benefits: string[];
+  risks: string[];
+  estimated_total_effort_hours: number;
+  timestamp: string;
+}
+
 // ============================================
 // Pattern Workflow Types
 // ============================================
@@ -716,54 +769,72 @@ class A2AClient {
   // ============================================
 
   /**
-   * Detect misplaced and duplicated components
-   * Pass empty string or "*" for component_name to analyze all components
+   * Detect misplaced and duplicated components across repositories
    */
   async detectMisplacedComponents(
-    repository: string,
-    filters?: {
-      component_type?: string[];
-      similarity_threshold?: number;
-    },
-    component_name: string = ''
+    repository?: string,
+    options?: {
+      component_types?: string[];
+      min_similarity_score?: number;
+      include_diverged?: boolean;
+      top_k_matches?: number;
+    }
   ): Promise<DetectMisplacedComponentsResponse> {
     const response = await this.client.post<DetectMisplacedComponentsResponse>('/a2a/execute', {
       skill_id: 'detect_misplaced_components',
       input: {
-        repository,
-        component_name,
-        filters: filters || {},
+        repository: repository || null,
+        component_types: options?.component_types,
+        min_similarity_score: options?.min_similarity_score,
+        include_diverged: options?.include_diverged,
+        top_k_matches: options?.top_k_matches,
       },
     });
     return response.data;
   }
 
   /**
-   * Analyze component centrality with 6-factor scoring
-   * Pass empty string or "*" for component_name to analyze all components
+   * Analyze a specific component's centrality and optimal location
+   * Evaluates where a component best fits based on multiple scoring factors
    */
   async analyzeComponentCentrality(
-    repository: string,
-    component_name: string = ''
-  ): Promise<AnalyzeComponentCentralityResponse> {
-    const response = await this.client.post<AnalyzeComponentCentralityResponse>('/a2a/execute', {
+    component_name: string,
+    current_location: string,
+    candidate_locations?: string[]
+  ): Promise<ComponentCentralityAnalysisResponse> {
+    const response = await this.client.post<ComponentCentralityAnalysisResponse>('/a2a/execute', {
       skill_id: 'analyze_component_centrality',
-      input: { repository, component_name },
+      input: {
+        component_name,
+        current_location,
+        candidate_locations: candidate_locations || undefined,
+      },
     });
     return response.data;
   }
 
   /**
-   * Recommend a consolidation plan for components
-   * Pass empty string or "*" for component_name to analyze all components
+   * Recommend a phased consolidation plan for a specific component
+   * Generates detailed roadmap with effort estimates and risk assessment
    */
   async recommendConsolidationPlan(
-    repository: string,
-    component_name: string = ''
-  ): Promise<RecommendConsolidationPlanResponse> {
-    const response = await this.client.post<RecommendConsolidationPlanResponse>('/a2a/execute', {
+    component_name: string,
+    from_repository: string,
+    options?: {
+      to_repository?: string;
+      include_impact_analysis?: boolean;
+      include_deep_analysis?: boolean;
+    }
+  ): Promise<ComponentConsolidationPlanResponse> {
+    const response = await this.client.post<ComponentConsolidationPlanResponse>('/a2a/execute', {
       skill_id: 'recommend_consolidation_plan',
-      input: { repository, component_name },
+      input: {
+        component_name,
+        from_repository,
+        to_repository: options?.to_repository || undefined,
+        include_impact_analysis: options?.include_impact_analysis,
+        include_deep_analysis: options?.include_deep_analysis,
+      },
     });
     return response.data;
   }

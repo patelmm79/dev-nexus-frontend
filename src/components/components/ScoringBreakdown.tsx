@@ -7,7 +7,6 @@ import {
   CircularProgress,
   Alert,
   Typography,
-  LinearProgress,
   Paper,
   Table,
   TableBody,
@@ -19,53 +18,28 @@ import {
   TextField,
   InputAdornment,
   Pagination,
+  Button,
 } from '@mui/material';
-import { Search as SearchIcon } from '@mui/icons-material';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import { useAnalyzeComponentCentrality } from '../../hooks/useComponentSensibility';
+import { Search as SearchIcon, Analyze as AnalyzeIcon } from '@mui/icons-material';
+import { useListComponents } from '../../hooks/useComponentSensibility';
 
 interface ScoringBreakdownProps {
   repository: string;
 }
 
-const FACTOR_LABELS: Record<string, string> = {
-  purpose_score: 'Purpose',
-  usage_score: 'Usage',
-  centrality_score: 'Centrality',
-  maintenance_score: 'Maintenance',
-  complexity_score: 'Complexity',
-  first_impl_score: 'First-Impl',
-};
-
-const FACTOR_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', '#d084d0'];
-
-const getGradeColor = (score: number): string => {
-  if (score >= 0.9) return '#4caf50';
-  if (score >= 0.8) return '#8bc34a';
-  if (score >= 0.7) return '#ffc107';
-  if (score >= 0.6) return '#ff9800';
-  return '#f44336';
-};
-
-const getGradeLetter = (score: number): string => {
-  if (score >= 0.9) return 'A';
-  if (score >= 0.8) return 'B';
-  if (score >= 0.7) return 'C';
-  if (score >= 0.6) return 'D';
-  return 'F';
-};
-
 export default function ScoringBreakdown({ repository }: ScoringBreakdownProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
+  const [selectedComponent, setSelectedComponent] = useState<any | null>(null);
+  const [centralityModalOpen, setCentralityModalOpen] = useState(false);
   const itemsPerPage = 10;
 
-  const { data, isLoading, isError, error } = useAnalyzeComponentCentrality(repository);
+  const { data, isLoading, isError, error } = useListComponents(repository);
 
   const filteredComponents = useMemo(() => {
     if (!data?.components) return [];
     return data.components.filter((comp) =>
-      comp.component_name.toLowerCase().includes(searchQuery.toLowerCase())
+      comp.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [data?.components, searchQuery]);
 
@@ -74,13 +48,10 @@ export default function ScoringBreakdown({ repository }: ScoringBreakdownProps) 
     return filteredComponents.slice(start, start + itemsPerPage);
   }, [filteredComponents, page]);
 
-  const pieData = useMemo(() => {
-    if (!data?.score_weights) return [];
-    return Object.entries(data.score_weights).map(([key, value]) => ({
-      name: FACTOR_LABELS[key] || key,
-      value: Math.round(value * 100),
-    }));
-  }, [data?.score_weights]);
+  const handleAnalyzeCentrality = (component: any) => {
+    setSelectedComponent(component);
+    setCentralityModalOpen(true);
+  };
 
   if (isLoading) {
     return (
@@ -93,13 +64,13 @@ export default function ScoringBreakdown({ repository }: ScoringBreakdownProps) 
   if (isError) {
     return (
       <Alert severity="error">
-        Failed to load scoring breakdown: {error instanceof Error ? error.message : 'Unknown error'}
+        Failed to load components: {error instanceof Error ? error.message : 'Unknown error'}
       </Alert>
     );
   }
 
   if (!data?.success) {
-    return <Alert severity="error">Scoring analysis failed. Please try again.</Alert>;
+    return <Alert severity="error">Failed to load components. Please try again.</Alert>;
   }
 
   return (
@@ -110,64 +81,31 @@ export default function ScoringBreakdown({ repository }: ScoringBreakdownProps) 
             <Typography color="textSecondary" gutterBottom>
               Total Components
             </Typography>
-            <Typography variant="h5">{data?.components?.length || 0}</Typography>
+            <Typography variant="h5">{data?.total_count || 0}</Typography>
           </CardContent>
         </Card>
         <Card>
           <CardContent sx={{ textAlign: 'center' }}>
             <Typography color="textSecondary" gutterBottom>
-              Average Score
+              Showing Filtered
             </Typography>
-            <Typography variant="h5">
-              {data?.summary_statistics?.avg_score
-                ? (data.summary_statistics.avg_score * 100).toFixed(0)
-                : 'N/A'}%
-            </Typography>
+            <Typography variant="h5">{data?.filtered_count || 0}</Typography>
           </CardContent>
         </Card>
         <Card>
           <CardContent sx={{ textAlign: 'center' }}>
             <Typography color="textSecondary" gutterBottom>
-              High Priority
+              Repository
             </Typography>
-            <Typography variant="h5" sx={{ color: 'warning.main' }}>
-              {data?.summary_statistics?.high_priority_count || 0}
-            </Typography>
+            <Typography variant="body2">{repository || 'All'}</Typography>
           </CardContent>
         </Card>
       </Box>
 
-      {pieData.length > 0 && (
-        <Card>
-          <CardHeader title="Factor Weights Distribution" />
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {pieData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={FACTOR_COLORS[index % FACTOR_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => `${value}%`} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
-
       <Card>
         <CardHeader
-          title="Component Scores"
-          subheader={`${filteredComponents.length} components total`}
+          title="Repository Components"
+          subheader={`${filteredComponents.length} of ${data?.total_count || 0} components`}
           action={
             <TextField
               size="small"
@@ -192,21 +130,18 @@ export default function ScoringBreakdown({ repository }: ScoringBreakdownProps) 
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ backgroundColor: 'action.hover' }}>
-                  <TableCell>Component</TableCell>
-                  <TableCell>Location</TableCell>
-                  <TableCell align="right">Overall</TableCell>
-                  <TableCell align="right">Purpose</TableCell>
-                  <TableCell align="right">Usage</TableCell>
-                  <TableCell align="right">Centrality</TableCell>
-                  <TableCell align="right">Maintenance</TableCell>
-                  <TableCell align="right">Complexity</TableCell>
-                  <TableCell align="right">First-Impl</TableCell>
+                  <TableCell>Component Name</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell align="right">LOC</TableCell>
+                  <TableCell align="right">Language</TableCell>
+                  <TableCell align="right">Keywords</TableCell>
+                  <TableCell align="center">Action</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {paginatedComponents.map((component, index) => (
                   <TableRow key={index}>
-                    <TableCell sx={{ maxWidth: 150 }}>
+                    <TableCell sx={{ maxWidth: 200 }}>
                       <Typography
                         variant="body2"
                         sx={{
@@ -214,56 +149,27 @@ export default function ScoringBreakdown({ repository }: ScoringBreakdownProps) 
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
                         }}
-                        title={component.component_name}
+                        title={component.name}
                       >
-                        {component.component_name}
+                        {component.name}
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ maxWidth: 150 }}>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                        title={component.location}
-                      >
-                        {component.location}
-                      </Typography>
+                    <TableCell>
+                      <Chip label={component.type} size="small" variant="outlined" />
                     </TableCell>
-                    <TableCell align="right">
-                      <Chip
-                        label={getGradeLetter(component.overall_score)}
+                    <TableCell align="right">{component.loc || '-'}</TableCell>
+                    <TableCell align="right">{component.language || '-'}</TableCell>
+                    <TableCell align="right">{component.keywords?.length || 0}</TableCell>
+                    <TableCell align="center">
+                      <Button
                         size="small"
-                        sx={{
-                          backgroundColor: getGradeColor(component.overall_score),
-                          color: 'white',
-                          fontWeight: 'bold',
-                        }}
-                      />
+                        variant="outlined"
+                        startIcon={<AnalyzeIcon />}
+                        onClick={() => handleAnalyzeCentrality(component)}
+                      >
+                        Analyze
+                      </Button>
                     </TableCell>
-                    {[
-                      component.purpose_score,
-                      component.usage_score,
-                      component.centrality_score,
-                      component.maintenance_score,
-                      component.complexity_score,
-                      component.first_impl_score,
-                    ].map((score, scoreIndex) => (
-                      <TableCell key={scoreIndex} align="right">
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-                          <LinearProgress
-                            variant="determinate"
-                            value={score * 100}
-                            sx={{ width: 50 }}
-                          />
-                          <Typography variant="caption">
-                            {(score * 100).toFixed(0)}%
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                    ))}
                   </TableRow>
                 ))}
               </TableBody>
@@ -287,6 +193,9 @@ export default function ScoringBreakdown({ repository }: ScoringBreakdownProps) 
           )}
         </CardContent>
       </Card>
+
+      {/* Component Centrality Detail Modal - will be rendered here */}
+      {/* TODO: Add ComponentCentralityDetailModal when created */}
     </Box>
   );
 }
