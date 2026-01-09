@@ -30,9 +30,15 @@ export default function ComponentAnalytics() {
     );
   }
 
-  const duplicationDistribution = duplicationData.duplication_distribution || [];
-  const consolidationProgress = duplicationData.consolidation_progress || [];
-  const effortSavings = duplicationData.effort_savings || [];
+  const duplicationDistribution = Array.isArray(duplicationData.duplication_distribution)
+    ? duplicationData.duplication_distribution
+    : [];
+  const consolidationProgress = Array.isArray(duplicationData.consolidation_progress)
+    ? duplicationData.consolidation_progress
+    : [];
+  const effortSavings = Array.isArray(duplicationData.effort_savings)
+    ? duplicationData.effort_savings
+    : [];
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>

@@ -33,9 +33,15 @@ export default function ActivityAnalytics() {
     );
   }
 
-  const activityTimeline = activityData.activity_timeline || [];
-  const activityByType = activityData.activity_by_type || [];
-  const repositoryRankings = activityData.repository_rankings || [];
+  const activityTimeline = Array.isArray(activityData.activity_timeline)
+    ? activityData.activity_timeline
+    : [];
+  const activityByType = Array.isArray(activityData.activity_by_type)
+    ? activityData.activity_by_type
+    : [];
+  const repositoryRankings = Array.isArray(activityData.repository_rankings)
+    ? activityData.repository_rankings
+    : [];
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>

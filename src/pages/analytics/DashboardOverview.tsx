@@ -32,19 +32,21 @@ export default function DashboardOverview() {
     );
   }
 
-  const metrics = dashboardData.metrics || [];
+  const metrics = Array.isArray(dashboardData.metrics) ? dashboardData.metrics : [];
   const systemHealth = dashboardData.system_health;
-  const alerts = dashboardData.alerts || [];
-  const timelineHighlights = dashboardData.timeline_highlights || [];
+  const alerts = Array.isArray(dashboardData.alerts) ? dashboardData.alerts : [];
+  const timelineHighlights = Array.isArray(dashboardData.timeline_highlights) ? dashboardData.timeline_highlights : [];
 
   // Transform dashboard metrics for MetricsGrid
-  const metricsForGrid: Metric[] = metrics.map((metric) => ({
-    label: metric.label,
-    value: metric.value,
-    unit: metric.unit,
-    trend: metric.trend,
-    status: metric.status,
-  }));
+  const metricsForGrid: Metric[] = Array.isArray(metrics)
+    ? metrics.map((metric) => ({
+        label: metric.label,
+        value: metric.value,
+        unit: metric.unit,
+        trend: metric.trend,
+        status: metric.status,
+      }))
+    : [];
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
