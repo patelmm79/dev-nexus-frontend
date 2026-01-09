@@ -32,8 +32,14 @@ export default function DashboardOverview() {
     );
   }
 
+  // Handle both direct and nested data structures
+  const metrics = dashboardData.metrics || dashboardData.data?.metrics || [];
+  const systemHealth = dashboardData.system_health || dashboardData.data?.system_health;
+  const alerts = dashboardData.alerts || dashboardData.data?.alerts || [];
+  const timelineHighlights = dashboardData.timeline_highlights || dashboardData.data?.timeline_highlights || [];
+
   // Transform dashboard metrics for MetricsGrid
-  const metricsForGrid: Metric[] = (dashboardData.metrics || []).map((metric) => ({
+  const metricsForGrid: Metric[] = metrics.map((metric) => ({
     label: metric.label,
     value: metric.value,
     unit: metric.unit,
@@ -44,18 +50,20 @@ export default function DashboardOverview() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* System Health Gauge */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 2fr' }, gap: 3 }}>
-        <SystemHealthGauge
-          healthScore={dashboardData.system_health.overall_health_score}
-          status={dashboardData.system_health.status}
-          uptime={dashboardData.system_health.uptime_percentage}
-        />
+      {systemHealth && (
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 2fr' }, gap: 3 }}>
+          <SystemHealthGauge
+            healthScore={systemHealth.overall_health_score}
+            status={systemHealth.status}
+            uptime={systemHealth.uptime_percentage}
+          />
 
-        {/* Key Metrics */}
-        <Box>
-          <MetricsGrid metrics={metricsForGrid.slice(0, 3)} columns={3} />
+          {/* Key Metrics */}
+          <Box>
+            <MetricsGrid metrics={metricsForGrid.slice(0, 3)} columns={3} />
+          </Box>
         </Box>
-      </Box>
+      )}
 
       {/* Additional Metrics */}
       {metricsForGrid.length > 3 && (
@@ -63,9 +71,9 @@ export default function DashboardOverview() {
       )}
 
       {/* Alerts */}
-      {(dashboardData.alerts || []).length > 0 && (
+      {alerts.length > 0 && (
         <AlertsList
-          alerts={dashboardData.alerts.map((alert) => ({
+          alerts={alerts.map((alert) => ({
             id: alert.id,
             severity: alert.severity,
             title: alert.title,
@@ -78,9 +86,9 @@ export default function DashboardOverview() {
       )}
 
       {/* Timeline */}
-      {(dashboardData.timeline_highlights || []).length > 0 && (
+      {timelineHighlights.length > 0 && (
         <TimelineHighlights
-          highlights={dashboardData.timeline_highlights.map((highlight) => ({
+          highlights={timelineHighlights.map((highlight) => ({
             timestamp: highlight.timestamp,
             event_type: highlight.event_type,
             title: highlight.title,
