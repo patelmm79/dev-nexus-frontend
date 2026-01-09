@@ -385,8 +385,12 @@ export interface ComponentCentralityAnalysis {
 
 export interface ComponentCentralityAnalysisResponse {
   success: boolean;
-  analysis: ComponentCentralityAnalysis;
-  analysis_timestamp?: string;
+  component_name: string;
+  current_location: string;
+  best_location: string;
+  all_scores: Record<string, any>;
+  improvement_score: number;
+  timestamp: string;
 }
 
 // Single-component consolidation plan response

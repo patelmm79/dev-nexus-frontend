@@ -32,11 +32,10 @@ export default function DashboardOverview() {
     );
   }
 
-  // Handle both direct and nested data structures
-  const metrics = dashboardData.metrics || dashboardData.data?.metrics || [];
-  const systemHealth = dashboardData.system_health || dashboardData.data?.system_health;
-  const alerts = dashboardData.alerts || dashboardData.data?.alerts || [];
-  const timelineHighlights = dashboardData.timeline_highlights || dashboardData.data?.timeline_highlights || [];
+  const metrics = dashboardData.metrics || [];
+  const systemHealth = dashboardData.system_health;
+  const alerts = dashboardData.alerts || [];
+  const timelineHighlights = dashboardData.timeline_highlights || [];
 
   // Transform dashboard metrics for MetricsGrid
   const metricsForGrid: Metric[] = metrics.map((metric) => ({
