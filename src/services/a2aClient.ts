@@ -717,18 +717,21 @@ class A2AClient {
 
   /**
    * Detect misplaced and duplicated components
+   * Pass empty string or "*" for component_name to analyze all components
    */
   async detectMisplacedComponents(
     repository: string,
     filters?: {
       component_type?: string[];
       similarity_threshold?: number;
-    }
+    },
+    component_name: string = ''
   ): Promise<DetectMisplacedComponentsResponse> {
     const response = await this.client.post<DetectMisplacedComponentsResponse>('/a2a/execute', {
       skill_id: 'detect_misplaced_components',
       input: {
         repository,
+        component_name,
         filters: filters || {},
       },
     });
@@ -752,13 +755,15 @@ class A2AClient {
 
   /**
    * Recommend a consolidation plan for components
+   * Pass empty string or "*" for component_name to analyze all components
    */
   async recommendConsolidationPlan(
-    repository: string
+    repository: string,
+    component_name: string = ''
   ): Promise<RecommendConsolidationPlanResponse> {
     const response = await this.client.post<RecommendConsolidationPlanResponse>('/a2a/execute', {
       skill_id: 'recommend_consolidation_plan',
-      input: { repository },
+      input: { repository, component_name },
     });
     return response.data;
   }
