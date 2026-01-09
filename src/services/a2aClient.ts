@@ -516,32 +516,36 @@ export interface GetPatternAdoptionTrendsResponse {
   end_date: string;
 }
 
+export interface OverallHealth {
+  average_score: number;
+  status: string;
+  critical_count: number;
+  warning_count: number;
+  healthy_count: number;
+}
+
 export interface PatternHealthScore {
   pattern_name: string;
-  health_score: number; // 0-100
-  usage_count: number;
-  adoption_rate: number;
+  health_score: number;
 }
 
 export interface PatternHealthTrend {
-  date: string;
-  avg_health_score: number;
-  total_issues: number;
-  healthy_patterns_count: number;
+  week: string;
+  average_score: number;
 }
 
 export interface PatternIssueType {
-  issue_type: string;
+  type: string;
   count: number;
-  percentage: number;
 }
 
 export interface GetPatternHealthSummaryResponse {
   success: boolean;
-  pattern_scores: PatternHealthScore[];
+  time_range_days: number;
+  overall_health: OverallHealth;
+  patterns_by_health: PatternHealthScore[];
   health_trends: PatternHealthTrend[];
-  issue_breakdown: PatternIssueType[];
-  overall_health_score: number;
+  top_issue_types: PatternIssueType[];
 }
 
 // Component Analytics Types

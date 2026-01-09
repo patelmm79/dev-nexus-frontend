@@ -40,14 +40,27 @@ export default function PatternAnalytics() {
   const adoptionTimeline = Array.isArray(adoptionData.data?.adoption_timeline)
     ? adoptionData.data.adoption_timeline
     : [];
+
+  // Transform health trends to match chart expectations (week -> date, average_score -> avg_health_score)
   const healthTrends = Array.isArray(healthData.data?.health_trends)
-    ? healthData.data.health_trends
+    ? healthData.data.health_trends.map((trend) => ({
+        date: trend.week,
+        avg_health_score: trend.average_score,
+        total_issues: 0, // Not provided in API
+      }))
     : [];
-  const patternScores = Array.isArray(healthData.data?.pattern_scores)
-    ? healthData.data.pattern_scores
+
+  // Use patterns_by_health from API
+  const patternScores = Array.isArray(healthData.data?.patterns_by_health)
+    ? healthData.data.patterns_by_health
     : [];
-  const issueBreakdown = Array.isArray(healthData.data?.issue_breakdown)
-    ? healthData.data.issue_breakdown
+
+  // Transform issue types to match chart expectations (type -> issue_type)
+  const issueBreakdown = Array.isArray(healthData.data?.top_issue_types)
+    ? healthData.data.top_issue_types.map((issue) => ({
+        issue_type: issue.type,
+        count: issue.count,
+      }))
     : [];
 
   return (
