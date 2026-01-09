@@ -265,9 +265,11 @@ export interface ComponentMetadata {
 export interface ListComponentsResponse {
   success: boolean;
   components: ComponentMetadata[];
-  total: number;
+  total_count: number;
+  filtered_count: number;
   offset: number;
   limit: number;
+  filters?: Record<string, any>;
 }
 
 // ============================================

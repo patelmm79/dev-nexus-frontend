@@ -40,7 +40,7 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
   );
 
   const { data: componentsData } = useListComponents(repository);
-  const totalComponentsScanned = componentsData?.total || 0;
+  const totalComponentsScanned = componentsData?.total_count || 0;
 
   const filteredIssues = useMemo(() => {
     if (!data?.component_issues) return [];

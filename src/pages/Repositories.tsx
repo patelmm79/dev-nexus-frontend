@@ -20,7 +20,7 @@ interface RepositoryCardProps {
 
 function RepositoryCard({ repo, scanResult, onScan }: RepositoryCardProps) {
   const { data: componentsData } = useListComponents(repo.name);
-  const componentCount = componentsData?.total || 0;
+  const componentCount = componentsData?.total_count || 0;
 
   return (
     <Card>
