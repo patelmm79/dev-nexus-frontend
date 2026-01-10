@@ -78,7 +78,7 @@ export default function ComponentDependencyGraph({ repository }: ComponentDepend
         }
       );
     });
-  }, [componentsData?.components, repository, centralizeMutation, analyzedComponents]);
+  }, [componentsData?.components, repository]);
 
   // Build graph data from analyzed components
   const buildGraphData = useCallback((): GraphData => {
