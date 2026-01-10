@@ -982,10 +982,14 @@ class A2AClient {
       top_k_matches?: number;
     }
   ): Promise<DetectMisplacedComponentsResponse> {
+    // Explicitly handle repository parameter - pass null to analyze all repos
+    const repoParam = repository && repository !== 'all' ? repository : null;
+    console.debug('detectMisplacedComponents called with:', { repository, repoParam });
+
     const response = await this.client.post<DetectMisplacedComponentsResponse>('/a2a/execute', {
       skill_id: 'detect_misplaced_components',
       input: {
-        repository: repository || null,
+        repository: repoParam,
         component_types: options?.component_types,
         min_similarity_score: options?.min_similarity_score,
         include_diverged: options?.include_diverged,
