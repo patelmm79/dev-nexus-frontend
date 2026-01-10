@@ -81,7 +81,7 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
       console.log('✓ Detection complete, now triggering centrality analysis...');
 
       // Analyze each component's centrality
-      componentsData.components.forEach((component) => {
+      componentsData.components.forEach((component: any) => {
         centralizeMutation.mutate({
           component_name: component.name,
           current_location: targetRepository || repository,

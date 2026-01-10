@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Paper,
@@ -52,8 +51,6 @@ export default function ComponentDependencyGraph({ repository }: ComponentDepend
   const [detailOpen, setDetailOpen] = useState(false);
   const [analyzedComponents, setAnalyzedComponents] = useState<Map<string, any>>(new Map());
   const [analysisStartTime, setAnalysisStartTime] = useState<number | null>(null);
-
-  const queryClient = useQueryClient();
 
   const { data: componentsData, isLoading: isLoadingComponents, isError, error } = useListComponents(repository);
   const centralizeMutation = useAnalyzeComponentCentralityMutation();
