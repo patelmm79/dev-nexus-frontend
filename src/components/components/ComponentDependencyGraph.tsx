@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Paper,
@@ -47,8 +48,17 @@ export default function ComponentDependencyGraph({ repository }: ComponentDepend
   const [detailOpen, setDetailOpen] = useState(false);
   const [analyzedComponents, setAnalyzedComponents] = useState<Map<string, any>>(new Map());
 
+  const queryClient = useQueryClient();
+  // Listen for refresh signals from ComponentDetection
+  const refreshSignal = queryClient.getQueryData(['componentAnalysisRefresh']);
+
   const { data: componentsData, isLoading: isLoadingComponents, isError, error } = useListComponents(repository);
   const centralizeMutation = useAnalyzeComponentCentralityMutation();
+
+  // Reset analyzed components when refresh is triggered
+  useEffect(() => {
+    setAnalyzedComponents(new Map());
+  }, [refreshSignal]);
 
   // Analyze components one at a time to get centrality data
   useEffect(() => {

@@ -95,6 +95,8 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
   const handleRefreshAnalysis = useCallback(() => {
     setAnalysisStartTime(Date.now());
     console.log(`🔄 Starting component analysis for "${targetRepository}"...`);
+    // Signal ComponentDependencyGraph to reset analyzed components
+    queryClient.setQueryData(['componentAnalysisRefresh'], Date.now());
     // Invalidate cache to force fresh API call
     queryClient.invalidateQueries({
       queryKey: ['misplacedComponents', targetRepository],
@@ -102,6 +104,10 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
     // Also invalidate component list cache so Scoring Breakdown refreshes
     queryClient.invalidateQueries({
       queryKey: ['listComponents'],
+    });
+    // Invalidate all component centrality queries for fresh analysis
+    queryClient.invalidateQueries({
+      queryKey: ['componentCentrality'],
     });
     refetch();
   }, [targetRepository, queryClient, refetch]);
@@ -113,6 +119,8 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
       setAnalysisStartTime(Date.now());
       const target = checked ? undefined : repository;
       console.log(`🔄 Starting component analysis for "${checked ? 'all' : 'selected'}"...`);
+      // Signal ComponentDependencyGraph to reset analyzed components
+      queryClient.setQueryData(['componentAnalysisRefresh'], Date.now());
       // Invalidate cache to force fresh API call
       queryClient.invalidateQueries({
         queryKey: ['misplacedComponents', target],
@@ -120,6 +128,10 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
       // Also invalidate component list cache so Scoring Breakdown refreshes
       queryClient.invalidateQueries({
         queryKey: ['listComponents'],
+      });
+      // Invalidate all component centrality queries for fresh analysis
+      queryClient.invalidateQueries({
+        queryKey: ['componentCentrality'],
       });
       refetch();
     }, 0);
