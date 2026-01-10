@@ -56,6 +56,16 @@ export default function ComponentDependencyGraph({ repository }: ComponentDepend
       return;
     }
 
+    // Create a set of component names to analyze
+    const componentNames = new Set(componentsData.components.map(c => c.name));
+
+    // Check if there are new components to analyze
+    const hasNewComponents = Array.from(componentNames).some(name => !analyzedComponents.has(name));
+
+    if (!hasNewComponents) {
+      return;
+    }
+
     // Analyze each component for centrality
     componentsData.components.forEach((component) => {
       // Skip if already analyzed
@@ -78,7 +88,7 @@ export default function ComponentDependencyGraph({ repository }: ComponentDepend
         }
       );
     });
-  }, [componentsData?.components, repository]);
+  }, [componentsData?.components?.length, repository, analyzedComponents.size]);
 
   // Build graph data from analyzed components
   const buildGraphData = useCallback((): GraphData => {
