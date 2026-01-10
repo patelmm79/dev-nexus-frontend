@@ -21,7 +21,7 @@ import {
   Tooltip,
 } from '@mui/material';
 import { Refresh as RefreshIcon } from '@mui/icons-material';
-import { useDetectMisplacedComponents } from '../../hooks/useComponentSensibility';
+import { useDetectMisplacedComponents, useAnalyzeComponentCentralityMutation } from '../../hooks/useComponentSensibility';
 import { useListComponents, useSuggestPattern, useCreatePattern, useCrossRepoPatterns } from '../../hooks/usePatterns';
 import PatternSuggestionModal from '../patterns/PatternSuggestionModal';
 
@@ -65,22 +65,30 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
     }
   }, [analysisStartTime, targetRepository]);
 
-  // Effect to trigger centrality analysis AFTER detect_misplaced_components completes
-  useEffect(() => {
-    if (!isLoading && analysisStartTime && data?.success) {
-      handleAnalysisComplete();
-      // After detection completes successfully, trigger centrality analysis
-      console.log('✓ Detection complete, now triggering centrality analysis...');
-      queryClient.setQueryData(['componentAnalysisRefresh'], Date.now());
-    }
-  }, [isLoading, data?.success, analysisStartTime, handleAnalysisComplete, queryClient]);
-
   const { data: componentsData } = useListComponents(repository);
   const totalComponentsScanned = componentsData?.total_count || 0;
 
   const suggestMutation = useSuggestPattern();
   const createMutation = useCreatePattern();
   const { data: patternsData } = useCrossRepoPatterns();
+  const centralizeMutation = useAnalyzeComponentCentralityMutation();
+
+  // Effect to trigger centrality analysis AFTER detect_misplaced_components completes
+  useEffect(() => {
+    if (!isLoading && analysisStartTime && data?.success && componentsData?.components) {
+      handleAnalysisComplete();
+      // After detection completes successfully, trigger centrality analysis for each component
+      console.log('✓ Detection complete, now triggering centrality analysis...');
+
+      // Analyze each component's centrality
+      componentsData.components.forEach((component) => {
+        centralizeMutation.mutate({
+          component_name: component.name,
+          current_location: targetRepository || repository,
+        });
+      });
+    }
+  }, [isLoading, data?.success, analysisStartTime, handleAnalysisComplete, componentsData?.components, centralizeMutation, targetRepository, repository]);
 
   const filteredIssues = useMemo(() => {
     if (!data?.component_issues) return [];
