@@ -1,4 +1,5 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Card,
@@ -42,6 +43,8 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
   const [analyzingComponent, setAnalyzingComponent] = useState<string | null>(null);
   const [analyzeAllRepos, setAnalyzeAllRepos] = useState(false);
   const [analysisStartTime, setAnalysisStartTime] = useState<number | null>(null);
+
+  const queryClient = useQueryClient();
 
   // Determine which repository to analyze
   const targetRepository = analyzeAllRepos ? undefined : repository;
@@ -89,21 +92,30 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
     );
   };
 
-  const handleRefreshAnalysis = () => {
+  const handleRefreshAnalysis = useCallback(() => {
     setAnalysisStartTime(Date.now());
     console.log(`🔄 Starting component analysis for "${targetRepository}"...`);
+    // Invalidate cache to force fresh API call
+    queryClient.invalidateQueries({
+      queryKey: ['misplacedComponents', targetRepository],
+    });
     refetch();
-  };
+  }, [targetRepository, queryClient, refetch]);
 
-  const handleToggleAnalyzeAllRepos = (checked: boolean) => {
+  const handleToggleAnalyzeAllRepos = useCallback((checked: boolean) => {
     setAnalyzeAllRepos(checked);
     // Trigger analysis when toggling
     setTimeout(() => {
       setAnalysisStartTime(Date.now());
+      const target = checked ? undefined : repository;
       console.log(`🔄 Starting component analysis for "${checked ? 'all' : 'selected'}"...`);
+      // Invalidate cache to force fresh API call
+      queryClient.invalidateQueries({
+        queryKey: ['misplacedComponents', target],
+      });
       refetch();
     }, 0);
-  };
+  }, [repository, queryClient, refetch]);
 
   const getIssueTypeColor = (type: 'duplicated' | 'misplaced' | 'orphaned'): 'error' | 'warning' | 'info' => {
     switch (type) {
