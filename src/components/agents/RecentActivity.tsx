@@ -261,7 +261,12 @@ export default function RecentActivity({
           <>
             <List>
               {actions.map((action, index) => {
-                const config = actionTypeConfig[action.action_type];
+                const config = actionTypeConfig[action.action_type] || {
+                  icon: <TimelineIcon />,
+                  color: '#666',
+                  bgColor: '#f5f5f5',
+                  label: 'Unknown Activity',
+                };
 
                 return (
                   <React.Fragment key={`${action.action_type}-${action.reference_id}-${index}`}>
