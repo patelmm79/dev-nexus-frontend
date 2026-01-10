@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Paper,
@@ -54,13 +54,6 @@ export default function ComponentDependencyGraph({ repository }: ComponentDepend
   const [analysisStartTime, setAnalysisStartTime] = useState<number | null>(null);
 
   const queryClient = useQueryClient();
-  // Listen for refresh signals from ComponentDetection using useQuery to create a reactive subscription
-  const { data: refreshSignal } = useQuery({
-    queryKey: ['componentAnalysisRefresh'],
-    queryFn: () => queryClient.getQueryData(['componentAnalysisRefresh']) ?? null,
-    staleTime: Infinity,
-    gcTime: Infinity,
-  });
 
   const { data: componentsData, isLoading: isLoadingComponents, isError, error } = useListComponents(repository);
   const centralizeMutation = useAnalyzeComponentCentralityMutation();
@@ -81,14 +74,6 @@ export default function ComponentDependencyGraph({ repository }: ComponentDepend
     // Reset analyzed components to force fresh analysis
     setAnalyzedComponents(new Map());
   }, [repository]);
-
-  // Reset analyzed components when refresh is triggered
-  useEffect(() => {
-    if (refreshSignal) {
-      console.log('🔄 ComponentDependencyGraph: Refresh signal received, resetting analyzed components', refreshSignal);
-      setAnalyzedComponents(new Map());
-    }
-  }, [refreshSignal]);
 
   // Analyze components one at a time to get centrality data
   useEffect(() => {
