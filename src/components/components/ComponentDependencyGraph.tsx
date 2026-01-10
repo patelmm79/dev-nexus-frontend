@@ -7,7 +7,11 @@ import {
   Alert,
   Typography,
   Chip,
+  IconButton,
+  Tooltip,
+  Stack,
 } from '@mui/material';
+import { Refresh as RefreshIcon } from '@mui/icons-material';
 import ForceGraph2D from 'react-force-graph-2d';
 import { useListComponents, useAnalyzeComponentCentralityMutation } from '../../hooks/useComponentSensibility';
 import ComponentCentralityDetail from './ComponentCentralityDetail';
@@ -47,6 +51,7 @@ export default function ComponentDependencyGraph({ repository }: ComponentDepend
   const [selectedComponent, setSelectedComponent] = useState<any | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [analyzedComponents, setAnalyzedComponents] = useState<Map<string, any>>(new Map());
+  const [analysisStartTime, setAnalysisStartTime] = useState<number | null>(null);
 
   const queryClient = useQueryClient();
   // Listen for refresh signals from ComponentDetection
@@ -54,6 +59,23 @@ export default function ComponentDependencyGraph({ repository }: ComponentDepend
 
   const { data: componentsData, isLoading: isLoadingComponents, isError, error } = useListComponents(repository);
   const centralizeMutation = useAnalyzeComponentCentralityMutation();
+
+  // Log when analysis completes
+  const handleAnalysisComplete = useCallback(() => {
+    if (analysisStartTime) {
+      const duration = Date.now() - analysisStartTime;
+      console.log(`✓ Centrality analysis completed for "${repository}" in ${(duration / 1000).toFixed(2)}s`);
+      setAnalysisStartTime(null);
+    }
+  }, [analysisStartTime, repository]);
+
+  // Handle refresh button click
+  const handleRefreshAnalysis = useCallback(() => {
+    setAnalysisStartTime(Date.now());
+    console.log(`🔄 Starting centrality analysis for "${repository}"...`);
+    // Reset analyzed components to force fresh analysis
+    setAnalyzedComponents(new Map());
+  }, [repository]);
 
   // Reset analyzed components when refresh is triggered
   useEffect(() => {
@@ -194,48 +216,73 @@ export default function ComponentDependencyGraph({ repository }: ComponentDepend
     );
   }
 
+  // Call analysis complete handler when all components are analyzed
+  useEffect(() => {
+    if (!isAnalyzing && analyzedComponents.size > 0) {
+      handleAnalysisComplete();
+    }
+  }, [isAnalyzing, analyzedComponents.size, handleAnalysisComplete]);
+
   return (
     <Box>
-      {/* Legend */}
-      <Paper sx={{ p: 2, mb: 2, display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box
-            sx={{
-              width: 16,
-              height: 16,
-              borderRadius: '50%',
-              backgroundColor: '#4caf50',
-            }}
+      {/* Controls and Legend */}
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+          <Typography variant="h6" sx={{ flex: 1 }}>
+            Component Centrality Analysis
+          </Typography>
+          <Tooltip title="Refresh centrality analysis">
+            <IconButton
+              onClick={handleRefreshAnalysis}
+              disabled={isAnalyzing}
+              color="primary"
+              size="small"
+            >
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+
+        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box
+              sx={{
+                width: 16,
+                height: 16,
+                borderRadius: '50%',
+                backgroundColor: '#4caf50',
+              }}
+            />
+            <Typography variant="body2">Component in optimal location</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box
+              sx={{
+                width: 16,
+                height: 16,
+                borderRadius: '50%',
+                backgroundColor: '#ff9800',
+              }}
+            />
+            <Typography variant="body2">Component should be consolidated</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box
+              sx={{
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                backgroundColor: '#2196f3',
+              }}
+            />
+            <Typography variant="body2">Target consolidation location</Typography>
+          </Box>
+          <Chip
+            size="small"
+            label={`${componentsData?.total_count || 0} components, ${analyzedComponents.size} analyzed`}
+            color="primary"
           />
-          <Typography variant="body2">Component in optimal location</Typography>
         </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box
-            sx={{
-              width: 16,
-              height: 16,
-              borderRadius: '50%',
-              backgroundColor: '#ff9800',
-            }}
-          />
-          <Typography variant="body2">Component should be consolidated</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box
-            sx={{
-              width: 12,
-              height: 12,
-              borderRadius: '50%',
-              backgroundColor: '#2196f3',
-            }}
-          />
-          <Typography variant="body2">Target consolidation location</Typography>
-        </Box>
-        <Chip
-          size="small"
-          label={`${componentsData?.total_count || 0} components, ${analyzedComponents.size} analyzed`}
-          color="primary"
-        />
       </Paper>
 
       {/* Graph */}
