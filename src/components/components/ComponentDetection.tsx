@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -15,7 +15,11 @@ import {
   FormControlLabel,
   Slider,
   Button,
+  Stack,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
+import { Refresh as RefreshIcon } from '@mui/icons-material';
 import { useDetectMisplacedComponents } from '../../hooks/useComponentSensibility';
 import { useListComponents, useSuggestPattern, useCreatePattern, useCrossRepoPatterns } from '../../hooks/usePatterns';
 import PatternSuggestionModal from '../patterns/PatternSuggestionModal';
@@ -36,13 +40,34 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
   const [suggestionModalOpen, setSuggestionModalOpen] = useState(false);
   const [currentSuggestion, setCurrentSuggestion] = useState<any>(null);
   const [analyzingComponent, setAnalyzingComponent] = useState<string | null>(null);
+  const [analyzeAllRepos, setAnalyzeAllRepos] = useState(false);
+  const [analysisStartTime, setAnalysisStartTime] = useState<number | null>(null);
 
-  const { data, isLoading, isError, error } = useDetectMisplacedComponents(
-    repository,
+  // Determine which repository to analyze
+  const targetRepository = analyzeAllRepos ? 'all' : repository;
+
+  const { data, isLoading, isError, error, refetch } = useDetectMisplacedComponents(
+    targetRepository,
     {
       min_similarity_score: similarityThreshold / 100, // Convert 0-100 to 0-1
     }
   );
+
+  // Log when analysis completes
+  const handleAnalysisComplete = () => {
+    if (analysisStartTime) {
+      const duration = Date.now() - analysisStartTime;
+      console.log(`✓ Component analysis completed for "${targetRepository}" in ${(duration / 1000).toFixed(2)}s`);
+      setAnalysisStartTime(null);
+    }
+  };
+
+  // Effect to log when data loads
+  useEffect(() => {
+    if (!isLoading && analysisStartTime && data?.success) {
+      handleAnalysisComplete();
+    }
+  }, [isLoading, data?.success, analysisStartTime]);
 
   const { data: componentsData } = useListComponents(repository);
   const totalComponentsScanned = componentsData?.total_count || 0;
@@ -62,6 +87,22 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
     setSelectedIssueTypes((prev) =>
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     );
+  };
+
+  const handleRefreshAnalysis = () => {
+    setAnalysisStartTime(Date.now());
+    console.log(`🔄 Starting component analysis for "${targetRepository}"...`);
+    refetch();
+  };
+
+  const handleToggleAnalyzeAllRepos = (checked: boolean) => {
+    setAnalyzeAllRepos(checked);
+    // Trigger analysis when toggling
+    setTimeout(() => {
+      setAnalysisStartTime(Date.now());
+      console.log(`🔄 Starting component analysis for "${checked ? 'all' : 'selected'}"...`);
+      refetch();
+    }, 0);
   };
 
   const getIssueTypeColor = (type: 'duplicated' | 'misplaced' | 'orphaned'): 'error' | 'warning' | 'info' => {
@@ -135,6 +176,59 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* Analysis Controls */}
+      <Paper sx={{ p: 3, backgroundColor: 'background.default' }}>
+        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ flex: 1 }}>
+            Analysis Controls
+          </Typography>
+          <Tooltip title="Refresh component analysis">
+            <IconButton
+              onClick={handleRefreshAnalysis}
+              disabled={isLoading}
+              color="primary"
+              size="small"
+            >
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+
+        <FormGroup>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={analyzeAllRepos}
+                onChange={(e) => handleToggleAnalyzeAllRepos(e.target.checked)}
+                disabled={isLoading}
+              />
+            }
+            label={
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  Analyze All Repositories
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {analyzeAllRepos
+                    ? 'Scanning all repositories for component issues'
+                    : `Scanning only: ${repository}`}
+                </Typography>
+              </Box>
+            }
+          />
+        </FormGroup>
+      </Paper>
+
+      {/* Status Message */}
+      {isLoading && (
+        <Alert severity="info" sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <CircularProgress size={20} />
+          <Typography variant="body2">
+            Analyzing {analyzeAllRepos ? 'all repositories' : 'selected repository'}...
+          </Typography>
+        </Alert>
+      )}
+
       <Paper sx={{ p: 3 }}>
         <Typography variant="h6" sx={{ mb: 2 }}>
           Filters
