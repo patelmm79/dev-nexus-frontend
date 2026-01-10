@@ -57,7 +57,10 @@ export default function ComponentDependencyGraph({ repository }: ComponentDepend
 
   // Reset analyzed components when refresh is triggered
   useEffect(() => {
-    setAnalyzedComponents(new Map());
+    if (refreshSignal) {
+      console.log('🔄 ComponentDependencyGraph: Refresh signal received, resetting analyzed components', refreshSignal);
+      setAnalyzedComponents(new Map());
+    }
   }, [refreshSignal]);
 
   // Analyze components one at a time to get centrality data
@@ -72,9 +75,18 @@ export default function ComponentDependencyGraph({ repository }: ComponentDepend
     // Check if there are new components to analyze
     const hasNewComponents = Array.from(componentNames).some(name => !analyzedComponents.has(name));
 
+    console.log('📊 Centrality analysis effect running:', {
+      componentsCount: componentsData.components.length,
+      analyzedCount: analyzedComponents.size,
+      hasNewComponents,
+    });
+
     if (!hasNewComponents) {
+      console.log('✓ All components already analyzed, skipping');
       return;
     }
+
+    console.log('🔍 Starting centrality analysis for', Array.from(componentNames).filter(name => !analyzedComponents.has(name)));
 
     // Analyze each component for centrality
     componentsData.components.forEach((component) => {
