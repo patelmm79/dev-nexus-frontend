@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import {
   Box,
   Paper,
@@ -54,8 +54,13 @@ export default function ComponentDependencyGraph({ repository }: ComponentDepend
   const [analysisStartTime, setAnalysisStartTime] = useState<number | null>(null);
 
   const queryClient = useQueryClient();
-  // Listen for refresh signals from ComponentDetection
-  const refreshSignal = queryClient.getQueryData(['componentAnalysisRefresh']);
+  // Listen for refresh signals from ComponentDetection using useQuery to create a reactive subscription
+  const { data: refreshSignal } = useQuery({
+    queryKey: ['componentAnalysisRefresh'],
+    queryFn: () => queryClient.getQueryData(['componentAnalysisRefresh']) ?? null,
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
 
   const { data: componentsData, isLoading: isLoadingComponents, isError, error } = useListComponents(repository);
   const centralizeMutation = useAnalyzeComponentCentralityMutation();
