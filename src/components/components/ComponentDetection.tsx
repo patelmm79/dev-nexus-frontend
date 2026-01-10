@@ -99,6 +99,10 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
     queryClient.invalidateQueries({
       queryKey: ['misplacedComponents', targetRepository],
     });
+    // Also invalidate component list cache so Scoring Breakdown refreshes
+    queryClient.invalidateQueries({
+      queryKey: ['listComponents'],
+    });
     refetch();
   }, [targetRepository, queryClient, refetch]);
 
@@ -112,6 +116,10 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
       // Invalidate cache to force fresh API call
       queryClient.invalidateQueries({
         queryKey: ['misplacedComponents', target],
+      });
+      // Also invalidate component list cache so Scoring Breakdown refreshes
+      queryClient.invalidateQueries({
+        queryKey: ['listComponents'],
       });
       refetch();
     }, 0);
