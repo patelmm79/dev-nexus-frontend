@@ -116,6 +116,8 @@ export function useDetectMisplacedComponentsMutation() {
 
 /**
  * Mutation to analyze component centrality
+ * Note: Toasts are suppressed here to avoid flashing during batch analysis.
+ * Components analyzing multiple items should display their own status messages.
  */
 export function useAnalyzeComponentCentralityMutation() {
   const queryClient = useQueryClient();
@@ -128,14 +130,11 @@ export function useAnalyzeComponentCentralityMutation() {
     }) => a2aClient.analyzeComponentCentrality(params.component_name, params.current_location, params.candidate_locations),
     onSuccess: (data, variables) => {
       queryClient.setQueryData(['componentCentrality', variables.component_name, variables.current_location, variables.candidate_locations], data);
-      if (data.success) {
-        toast.success('Centrality analysis completed!');
-      } else {
-        toast.error('Centrality analysis failed');
-      }
+      // Suppress toasts during batch analysis - components handle their own status UI
     },
     onError: (error: Error) => {
-      toast.error(`Analysis error: ${error.message}`);
+      // Log errors to console but suppress toasts to prevent flashing during batch operations
+      console.error(`Centrality analysis error for component: ${error.message}`);
     },
   });
 }
