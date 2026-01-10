@@ -44,7 +44,7 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
   const [analysisStartTime, setAnalysisStartTime] = useState<number | null>(null);
 
   // Determine which repository to analyze
-  const targetRepository = analyzeAllRepos ? 'all' : repository;
+  const targetRepository = analyzeAllRepos ? undefined : repository;
 
   const { data, isLoading, isError, error, refetch } = useDetectMisplacedComponents(
     targetRepository,
