@@ -141,6 +141,23 @@ export function usePatterns(repository: string, keywords?: string[]) {
 - Loading states shown with MUI CircularProgress or Skeleton components
 - Error boundaries should wrap page-level components
 
+### Enum/Union Type Lookups from APIs
+When working with TypeScript union types that come from API responses, **always provide fallbacks**:
+```typescript
+// BAD: Will crash if action_type is not in the config map
+const config = actionTypeConfig[action.action_type];
+return config.bgColor; // Runtime error if action_type is unexpected
+
+// GOOD: Always has a fallback
+const config = actionTypeConfig[action.action_type] || {
+  bgColor: '#f5f5f5',
+  color: '#666',
+  label: 'Unknown Type'
+};
+return config.bgColor; // Always safe
+```
+**Why:** TypeScript union types do NOT guarantee the API will only return those values. The backend may add new enum values, have version mismatches, or return unexpected data. Always expect the API to violate its documented contract and handle it gracefully.
+
 ### Environment Configuration
 Environment variables are accessed via Vite's `import.meta.env`:
 - `VITE_API_BASE_URL` - Backend API URL (required)

@@ -79,6 +79,27 @@ Key Technical Lessons
   - Code review must include verification that types match actual responses
 - **Key principle:** The actual API response is the source of truth. If it differs from TypeScript types, the types are wrong—not the API. Never trust code or documentation over the actual running API response.
 
+13. Always provide fallbacks for union type values from APIs
+- TypeScript union types (e.g., `action_type: 'analysis' | 'lesson' | 'deployment' | 'runtime_issue'`) do NOT guarantee the API will only return those values.
+- The backend may add new enum values, return unexpected data due to bugs, or have version mismatches.
+- Code that directly accesses config maps keyed by union types without fallbacks will crash at runtime:
+  ```typescript
+  // BAD - crashes if action_type is not in actionTypeConfig
+  const config = actionTypeConfig[action.action_type];
+  return config.bgColor;  // "Cannot read properties of undefined (reading 'bgColor')"
+
+  // GOOD - provides sensible fallback
+  const config = actionTypeConfig[action.action_type] || {
+    bgColor: '#f5f5f5',
+    color: '#666',
+    icon: <DefaultIcon />,
+    label: 'Unknown Type',
+  };
+  return config.bgColor;  // Always safe
+  ```
+- Even if TypeScript is satisfied with the types, always add fallbacks for enum/union type lookups from external APIs.
+- This is defensive programming: expect the API to violate its documented contract and handle it gracefully.
+
 Process Lessons
 - Make small, atomic edits and re-run `tsc`/`npm run build` frequently to isolate regressions.
 - Use the repository search to find duplicate copies before adding supplier components.
