@@ -57,20 +57,23 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
   );
 
   // Log when analysis completes
-  const handleAnalysisComplete = () => {
+  const handleAnalysisComplete = useCallback(() => {
     if (analysisStartTime) {
       const duration = Date.now() - analysisStartTime;
       console.log(`✓ Component analysis completed for "${targetRepository}" in ${(duration / 1000).toFixed(2)}s`);
       setAnalysisStartTime(null);
     }
-  };
+  }, [analysisStartTime, targetRepository]);
 
-  // Effect to log when data loads
+  // Effect to trigger centrality analysis AFTER detect_misplaced_components completes
   useEffect(() => {
     if (!isLoading && analysisStartTime && data?.success) {
       handleAnalysisComplete();
+      // After detection completes successfully, trigger centrality analysis
+      console.log('✓ Detection complete, now triggering centrality analysis...');
+      queryClient.setQueryData(['componentAnalysisRefresh'], Date.now());
     }
-  }, [isLoading, data?.success, analysisStartTime]);
+  }, [isLoading, data?.success, analysisStartTime, handleAnalysisComplete, queryClient]);
 
   const { data: componentsData } = useListComponents(repository);
   const totalComponentsScanned = componentsData?.total_count || 0;
@@ -95,8 +98,6 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
   const handleRefreshAnalysis = useCallback(() => {
     setAnalysisStartTime(Date.now());
     console.log(`🔄 Starting component analysis for "${targetRepository}"...`);
-    // Signal ComponentDependencyGraph to reset analyzed components
-    queryClient.setQueryData(['componentAnalysisRefresh'], Date.now());
     // Invalidate cache to force fresh API call
     queryClient.invalidateQueries({
       queryKey: ['misplacedComponents', targetRepository],
@@ -109,6 +110,7 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
     queryClient.invalidateQueries({
       queryKey: ['componentCentrality'],
     });
+    // Trigger detection (centrality will be triggered after detection completes)
     refetch();
   }, [targetRepository, queryClient, refetch]);
 
