@@ -31,6 +31,14 @@ export default function WorkflowProgress({
   onViewResults,
   onRefresh,
 }: WorkflowProgressProps) {
+  // Debug logging
+  console.log('🔍 WorkflowProgress debug:', {
+    workflowId,
+    status,
+    isLoading,
+    hasRepositories: status?.repositories?.length || 0,
+  });
+
   const isComplete =
     status && (status.status === 'completed' || status.status === 'failed');
 

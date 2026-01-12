@@ -26,8 +26,14 @@ export function useWorkflowStatus(workflowId: string | null) {
   return useQuery<WorkflowStatusResponse | null>({
     queryKey: ['workflowStatus', workflowId],
     queryFn: async () => {
-      if (!workflowId) return null;
-      return await a2aClient.getWorkflowStatus(workflowId);
+      if (!workflowId) {
+        console.log('⚠️ useWorkflowStatus: workflowId is null, returning null');
+        return null;
+      }
+      console.log('📊 Fetching workflow status for ID:', workflowId);
+      const result = await a2aClient.getWorkflowStatus(workflowId);
+      console.log('📈 Workflow status response:', result);
+      return result;
     },
     enabled: !!workflowId,
     staleTime: 0, // Always fresh - user will manually refresh

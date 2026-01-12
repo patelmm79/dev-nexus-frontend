@@ -19,7 +19,9 @@
       "Bash(find:*)",
       "Bash(npm ls:*)",
       "Bash(grep:*)",
-      "Bash(npm audit fix:*)"
+      "Bash(npm audit fix:*)",
+      "Bash(dir \"c:\\\\Users\\\\insan\\\\PycharmProjects\\\\dev-nexus-frontend\\\\src\\\\pages\")",
+      "Bash(dir \"c:\\\\Users\\\\insan\\\\PycharmProjects\\\\dev-nexus-frontend\\\\src\\\\hooks\")"
     ]
   }
 }

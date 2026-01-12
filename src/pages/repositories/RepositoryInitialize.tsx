@@ -24,6 +24,7 @@ export default function RepositoryInitialize() {
     }
   ) => {
     try {
+      console.log('🚀 Starting workflow with repositories:', repositories);
       const result = await triggerWorkflowMutation.mutateAsync({
         repository_names: repositories,
         phases: {
@@ -32,7 +33,9 @@ export default function RepositoryInitialize() {
         },
       });
 
+      console.log('✅ Workflow triggered:', result);
       if (result.success) {
+        console.log('📝 Setting workflow ID:', result.workflow_id);
         setWorkflowId(result.workflow_id);
         setCurrentPhase('executing');
       }
@@ -43,6 +46,7 @@ export default function RepositoryInitialize() {
   };
 
   const handleRefreshStatus = async () => {
+    console.log('🔄 Refreshing workflow status for ID:', workflowId);
     await refetchStatus();
   };
 
