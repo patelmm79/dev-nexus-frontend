@@ -142,7 +142,7 @@ export default function WorkflowProgress({
 
       {/* Repository Status Cards */}
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 2 }}>
-        {status.repositories.map((repo) => (
+        {(status.repositories || []).map((repo) => (
           <Card key={repo.name} sx={{ height: '100%' }}>
             <CardHeader
               title={repo.name}
@@ -171,7 +171,7 @@ export default function WorkflowProgress({
                   <Typography variant="subtitle2" sx={{ mb: 1 }}>
                     Analysis Phases
                   </Typography>
-                  {repo.phases.map((phase, idx) => (
+                  {(repo.phases || []).map((phase, idx) => (
                     <Box
                       key={phase.name}
                       sx={{
