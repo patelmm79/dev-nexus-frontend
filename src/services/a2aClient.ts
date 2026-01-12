@@ -158,6 +158,13 @@ export interface CrossRepoPattern {
   variations: string[];
 }
 
+// Backend response structure for cross-repo patterns
+export interface BackendCrossRepoPattern {
+  pattern: string;
+  repositories: string[];
+  repo_count: number;
+}
+
 export interface GetCrossRepoPatternsResponse {
   success: boolean;
   patterns: CrossRepoPattern[];
@@ -996,11 +1003,30 @@ class A2AClient {
    * Get cross-repository patterns
    */
   async getCrossRepoPatterns(minOccurrences: number = 2): Promise<GetCrossRepoPatternsResponse> {
-    const response = await this.client.post<GetCrossRepoPatternsResponse>('/a2a/execute', {
+    const response = await this.client.post<any>('/a2a/execute', {
       skill_id: 'get_cross_repo_patterns',
       input: { min_occurrences: minOccurrences },
     });
-    return response.data;
+
+    const backendData = response.data as any;
+
+    // Transform backend response to match frontend types
+    // Backend returns: { cross_repo_patterns: [...], total_patterns, ... }
+    // Frontend expects: { patterns: [...], total_patterns, ... }
+    const patterns = (backendData.cross_repo_patterns || []).map(
+      (pattern: BackendCrossRepoPattern): CrossRepoPattern => ({
+        pattern_name: pattern.pattern,
+        repositories: pattern.repositories || [],
+        occurrences: pattern.repo_count || 0,
+        variations: [], // Backend doesn't provide variations, use empty array
+      })
+    );
+
+    return {
+      success: backendData.success,
+      patterns,
+      total_patterns: backendData.total_patterns || 0,
+    };
   }
 
   /**
