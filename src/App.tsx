@@ -4,6 +4,7 @@ import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Repositories from './pages/Repositories';
+import RepositoryInitialize from './pages/repositories/RepositoryInitialize';
 import Patterns from './pages/Patterns';
 import Configuration from './pages/Configuration';
 import Deployment from './pages/Deployment';
@@ -62,6 +63,7 @@ function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="repositories" element={<Repositories />} />
+          <Route path="repositories/initialize" element={<RepositoryInitialize />} />
           <Route path="patterns" element={<Patterns />} />
           <Route path="components" element={<Components />} />
           <Route path="analytics" element={<Analytics />} />

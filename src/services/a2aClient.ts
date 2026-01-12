@@ -705,6 +705,107 @@ export interface DeprecatePatternResponse {
 }
 
 // ============================================
+// Workflow Orchestration Types
+// ============================================
+
+export interface WorkflowPhaseStatus {
+  name: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  error?: string;
+  started_at?: string;
+  completed_at?: string;
+}
+
+export interface WorkflowRepositoryStatus {
+  name: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  phases: WorkflowPhaseStatus[];
+  error?: string;
+  patterns_extracted?: number;
+  dependencies_discovered?: number;
+}
+
+export interface TriggerFullAnalysisInput {
+  repository_names: string[];
+  phases: {
+    pattern_extraction: boolean;
+    dependency_discovery: boolean;
+    metadata_analysis?: boolean;
+  };
+}
+
+export interface TriggerFullAnalysisResponse {
+  success: boolean;
+  workflow_id: string;
+  message: string;
+  repositories: string[];
+  start_time: string;
+}
+
+export interface WorkflowStatusResponse {
+  success: boolean;
+  workflow_id: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  repositories: WorkflowRepositoryStatus[];
+  overall_progress: number; // 0-100
+  start_time: string;
+  completed_time?: string;
+  error?: string;
+}
+
+export interface ExtractPatternsInput {
+  repository_name: string;
+}
+
+export interface ExtractPatternsResponse {
+  success: boolean;
+  repository: string;
+  patterns_extracted: number;
+  message: string;
+}
+
+export interface DiscoverDependenciesInput {
+  repository_name: string;
+}
+
+export interface DiscoverDependenciesResponse {
+  success: boolean;
+  repository: string;
+  dependencies_discovered: number;
+  message: string;
+}
+
+export interface DependencyVerification {
+  source_repository: string;
+  target_repository: string;
+  dependency_type: string;
+  confidence: number; // 0-100
+}
+
+export interface UpdateDependencyVerificationInput {
+  dependencies: DependencyVerification[];
+}
+
+export interface UpdateDependencyVerificationResponse {
+  success: boolean;
+  updated_count: number;
+  message: string;
+}
+
+export interface WorkflowMetadata {
+  repository: string;
+  patterns_count: number;
+  dependencies_count: number;
+  components_count: number;
+  last_updated: string;
+}
+
+export interface WorkflowMetadataResponse {
+  success: boolean;
+  metadata: WorkflowMetadata[];
+}
+
+// ============================================
 // API Client Class
 // ============================================
 
@@ -1338,6 +1439,87 @@ class A2AClient {
       input: {
         repository,
       },
+    });
+    return response.data;
+  }
+
+  // ============================================
+  // Workflow Orchestration Methods
+  // ============================================
+
+  /**
+   * Trigger full analysis workflow for multiple repositories
+   */
+  async triggerFullAnalysisWorkflow(
+    input: TriggerFullAnalysisInput
+  ): Promise<TriggerFullAnalysisResponse> {
+    const response = await this.client.post<TriggerFullAnalysisResponse>('/a2a/execute', {
+      skill_id: 'trigger_full_analysis_workflow',
+      input,
+    });
+    return response.data;
+  }
+
+  /**
+   * Get workflow status and progress
+   */
+  async getWorkflowStatus(workflowId: string): Promise<WorkflowStatusResponse> {
+    const response = await this.client.post<WorkflowStatusResponse>('/a2a/execute', {
+      skill_id: 'get_workflow_status',
+      input: { workflow_id: workflowId },
+    });
+    return response.data;
+  }
+
+  /**
+   * Extract patterns from a single repository
+   */
+  async extractRepositoryPatterns(
+    input: ExtractPatternsInput
+  ): Promise<ExtractPatternsResponse> {
+    const response = await this.client.post<ExtractPatternsResponse>('/a2a/execute', {
+      skill_id: 'extract_repository_patterns',
+      input,
+    });
+    return response.data;
+  }
+
+  /**
+   * Discover dependencies in a single repository
+   */
+  async discoverRepositoryDependencies(
+    input: DiscoverDependenciesInput
+  ): Promise<DiscoverDependenciesResponse> {
+    const response = await this.client.post<DiscoverDependenciesResponse>('/a2a/execute', {
+      skill_id: 'discover_repository_dependencies',
+      input,
+    });
+    return response.data;
+  }
+
+  /**
+   * Update dependency verification confidence scores
+   */
+  async updateDependencyVerification(
+    input: UpdateDependencyVerificationInput
+  ): Promise<UpdateDependencyVerificationResponse> {
+    const response = await this.client.post<UpdateDependencyVerificationResponse>(
+      '/a2a/execute',
+      {
+        skill_id: 'update_dependency_verification',
+        input,
+      }
+    );
+    return response.data;
+  }
+
+  /**
+   * Get workflow metadata statistics
+   */
+  async getWorkflowMetadata(): Promise<WorkflowMetadataResponse> {
+    const response = await this.client.post<WorkflowMetadataResponse>('/a2a/execute', {
+      skill_id: 'get_workflow_metadata',
+      input: {},
     });
     return response.data;
   }

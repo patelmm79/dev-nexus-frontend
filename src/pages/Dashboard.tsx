@@ -7,6 +7,7 @@ import {
   TrendingUp,
   Search as SearchIcon,
   Visibility as VisibilityIcon,
+  PlayArrow as WorkflowIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useHealth, useRepositories, useCrossRepoPatterns, useExternalAgents } from '../hooks/usePatterns';
@@ -125,6 +126,29 @@ export default function Dashboard() {
               Manage Repositories
             </Button>
           </Box>
+        </CardContent>
+      </Card>
+
+      <Card sx={{ mt: 3, backgroundColor: 'action.hover' }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <WorkflowIcon color="primary" sx={{ fontSize: 32 }} />
+            <Box>
+              <Typography variant="h6" gutterBottom sx={{ m: 0 }}>
+                Repository Initialization
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Automate pattern extraction and dependency discovery across multiple repositories
+              </Typography>
+            </Box>
+          </Box>
+          <Button
+            variant="contained"
+            startIcon={<WorkflowIcon />}
+            onClick={() => navigate('/repositories/initialize')}
+          >
+            Start Workflow
+          </Button>
         </CardContent>
       </Card>
 

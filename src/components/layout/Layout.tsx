@@ -27,6 +27,7 @@ import {
   Hub as AgentsIcon,
   CheckCircle as ComplianceIcon,
   TrendingUp as AnalyticsIcon,
+  PlayArrow as WorkflowIcon,
 } from '@mui/icons-material';
 import HealthIndicator from '../common/HealthIndicator';
 import AddRepositoryDialog from '../repository/AddRepositoryDialog';
@@ -36,6 +37,7 @@ const drawerWidth = 240;
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
   { text: 'Repositories', icon: <FolderIcon />, path: '/repositories' },
+  { text: 'Initialize Workflow', icon: <WorkflowIcon />, path: '/repositories/initialize' },
   { text: 'Patterns', icon: <CategoryIcon />, path: '/patterns' },
   { text: 'Components', icon: <ComponentIcon />, path: '/components' },
   { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
