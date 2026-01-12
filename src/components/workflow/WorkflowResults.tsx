@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -54,6 +55,7 @@ export default function WorkflowResults({
   isLoading = false,
 }: WorkflowResultsProps) {
   const [currentTab, setCurrentTab] = useState(0);
+  const navigate = useNavigate();
 
   const totalRepositories = workflowStatus?.repositories.length || 0;
   const completedRepositories =
@@ -141,16 +143,14 @@ export default function WorkflowResults({
                   <Button
                     variant="contained"
                     fullWidth
-                    onClick={() =>
-                      window.location.href = '/analytics/overview'
-                    }
+                    onClick={() => navigate('/analytics')}
                   >
-                    📊 View Analytics Overview
+                    📊 View Analytics
                   </Button>
                   <Button
                     variant="contained"
                     fullWidth
-                    onClick={() => window.location.href = '/components'}
+                    onClick={() => navigate('/components')}
                   >
                     🔍 Analyze Components
                   </Button>
