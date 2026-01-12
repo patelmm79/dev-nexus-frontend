@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { a2aClient } from '../services/a2aClient';
+import { transformWorkflowResponse } from '../lib/workflowTransformers';
 import type {
   TriggerFullAnalysisInput,
   TriggerFullAnalysisResponse,
@@ -176,4 +177,30 @@ export function useUpdateDependencyVerification() {
       toast.error(`Failed to update dependencies: ${error.message}`);
     },
   });
+}
+
+/**
+ * Get workflow status with transformation for components
+ * Converts backend response format to component-friendly format
+ */
+export function useWorkflowStatusTransformed(workflowId: string | null) {
+  const baseQuery = useWorkflowStatus(workflowId);
+  
+  if (!baseQuery.data) {
+    return {
+      ...baseQuery,
+      data: null,
+      repositories: [],
+      overall_progress: 0,
+    };
+  }
+
+  const transformed = transformWorkflowResponse(baseQuery.data);
+  
+  return {
+    ...baseQuery,
+    data: transformed,
+    repositories: transformed.repositories,
+    overall_progress: transformed.overall_progress,
+  };
 }

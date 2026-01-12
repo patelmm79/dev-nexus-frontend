@@ -3,7 +3,7 @@ import { Box, Container, Typography, Card, CardContent } from '@mui/material';
 import RepositoryForm from '../../components/workflow/RepositoryForm';
 import WorkflowProgress from '../../components/workflow/WorkflowProgress';
 import WorkflowResults from '../../components/workflow/WorkflowResults';
-import { useTriggerWorkflow, useWorkflowStatus, useUpdateDependencyVerification } from '../../hooks/useWorkflow';
+import { useTriggerWorkflow, useWorkflowStatusTransformed, useUpdateDependencyVerification } from '../../hooks/useWorkflow';
 
 type WorkflowPhase = 'configure' | 'executing' | 'results';
 
@@ -66,7 +66,7 @@ export default function RepositoryInitialize() {
   const [isAsyncWorkflow, setIsAsyncWorkflow] = useState(false);
 
   const triggerWorkflowMutation = useTriggerWorkflow();
-  const { data: workflowStatus, refetch: refetchStatus, isLoading: isStatusLoading } = useWorkflowStatus(workflowId);
+  const { data: workflowStatus, refetch: refetchStatus, isLoading: isStatusLoading } = useWorkflowStatusTransformed(workflowId);
   const updateDepsMutation = useUpdateDependencyVerification();
 
   // When workflow status indicates completion AND has data, move to results phase
