@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Container, Typography, Card, CardContent } from '@mui/material';
 import RepositoryForm from '../../components/workflow/RepositoryForm';
 import WorkflowProgress from '../../components/workflow/WorkflowProgress';
@@ -7,10 +7,21 @@ import { useTriggerWorkflow, useWorkflowStatus, useUpdateDependencyVerification 
 
 type WorkflowPhase = 'configure' | 'executing' | 'results';
 
-// Helper function to transform TriggerFullAnalysisResponse into a format compatible with WorkflowResults
+// Helper function to transform TriggerFullAnalysisResponse or WorkflowStatusResponse into a format compatible with WorkflowResults
 function transformWorkflowResults(result: any): any {
   if (!result) return undefined;
 
+  // If this is already a WorkflowStatusResponse from polling, use it directly
+  if (result.repositories && Array.isArray(result.repositories) && result.overall_progress !== undefined) {
+    return {
+      success: result.success,
+      status: result.status,
+      repositories: result.repositories,
+      overall_progress: result.overall_progress,
+    };
+  }
+
+  // Otherwise transform from TriggerFullAnalysisResponse
   const repositoriesByName = new Map<string, any>();
 
   result.workflow_steps?.forEach((step: any) => {
@@ -52,10 +63,19 @@ export default function RepositoryInitialize() {
   const [currentPhase, setCurrentPhase] = useState<WorkflowPhase>('configure');
   const [workflowId, setWorkflowId] = useState<string | null>(null);
   const [workflowResults, setWorkflowResults] = useState<any>(null);
+  const [isAsyncWorkflow, setIsAsyncWorkflow] = useState(false);
 
   const triggerWorkflowMutation = useTriggerWorkflow();
   const { data: workflowStatus, refetch: refetchStatus, isLoading: isStatusLoading } = useWorkflowStatus(workflowId);
   const updateDepsMutation = useUpdateDependencyVerification();
+
+  // When workflow status indicates completion, move to results phase
+  useEffect(() => {
+    if (isAsyncWorkflow && workflowStatus && (workflowStatus.status === 'completed' || workflowStatus.status === 'failed')) {
+      console.log('🏁 Async workflow reached terminal state:', workflowStatus.status);
+      setCurrentPhase('results');
+    }
+  }, [isAsyncWorkflow, workflowStatus?.status]);
 
   const handleStartWorkflow = async (
     repositories: string[],
@@ -71,8 +91,20 @@ export default function RepositoryInitialize() {
       });
 
       if (result.success) {
-        setWorkflowResults(result);
-        setCurrentPhase('results');
+        // Check if this is an async_queued response (Phase 11 pattern)
+        if ((result as any).state === 'async_queued') {
+          console.log('✅ Workflow queued asynchronously, starting polling...');
+          const workflowIdFromResponse = (result as any).workflow_id;
+          setWorkflowId(workflowIdFromResponse);
+          setIsAsyncWorkflow(true);
+          setCurrentPhase('executing');
+        } else {
+          // Fallback for synchronous responses
+          console.log('✅ Workflow completed synchronously');
+          setWorkflowResults(result);
+          setIsAsyncWorkflow(false);
+          setCurrentPhase('results');
+        }
       }
     } catch (error) {
       console.error('Failed to start workflow:', error);
@@ -140,10 +172,23 @@ export default function RepositoryInitialize() {
           <RepositoryForm onStartWorkflow={handleStartWorkflow} isLoading={triggerWorkflowMutation.isPending} />
         )}
         {currentPhase === 'executing' && workflowId && (
-          <WorkflowProgress workflowId={workflowId} status={workflowStatus || undefined} isLoading={isStatusLoading} onViewResults={handleViewResults} onRefresh={handleRefreshStatus} />
+          <WorkflowProgress
+            workflowId={workflowId}
+            status={workflowStatus || undefined}
+            isLoading={isStatusLoading}
+            onViewResults={handleViewResults}
+            onRefresh={handleRefreshStatus}
+          />
         )}
         {currentPhase === 'results' && (
-          <WorkflowResults workflowStatus={transformWorkflowResults(workflowResults)} dependencies={[]} metadata={[]} onStartNew={handleStartNew} onUpdateDependencies={handleUpdateDependencies} isLoading={updateDepsMutation.isPending} />
+          <WorkflowResults
+            workflowStatus={isAsyncWorkflow && workflowStatus ? transformWorkflowResults(workflowStatus) : transformWorkflowResults(workflowResults)}
+            dependencies={[]}
+            metadata={[]}
+            onStartNew={handleStartNew}
+            onUpdateDependencies={handleUpdateDependencies}
+            isLoading={updateDepsMutation.isPending}
+          />
         )}
       </Box>
     </Container>

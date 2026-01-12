@@ -72,12 +72,22 @@ export function useTriggerWorkflow() {
     onSuccess: (data: TriggerFullAnalysisResponse) => {
       console.log('🎯 Full trigger response:', data);
 
-      // Calculate repository count from workflow_steps or use repositories_processed
-      const repoCount = data.repositories_processed !== undefined
-        ? data.repositories_processed
-        : (data.workflow_steps ?
-            new Set(data.workflow_steps.map((step: any) => step.repository)).size
-            : 0);
+      // Check if response is async_queued (Phase 11 pattern)
+      if ((data as any).state === 'async_queued') {
+        console.log('⏳ Workflow queued for async execution');
+        console.log('   Workflow ID:', (data as any).workflow_id);
+        console.log('   Polling interval:', (data as any).polling_interval_ms, 'ms');
+        console.log('   Repositories count:', (data as any).repositories_count);
+        toast.success('Workflow queued! Monitoring progress...');
+        return;
+      }
+
+      // Fallback for synchronous responses
+      const repoCount = (data as any).repositories_processed !== undefined
+        ? (data as any).repositories_processed
+        : ((data as any).workflow_steps ?
+            new Set((data as any).workflow_steps.map((step: any) => step.repository)).size
+            : ((data as any).repositories_count || 0));
 
       console.log('   Repositories processed:', repoCount);
       console.log('   Timestamp:', data.timestamp);
