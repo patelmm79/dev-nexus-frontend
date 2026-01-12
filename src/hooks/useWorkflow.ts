@@ -180,26 +180,55 @@ export function useUpdateDependencyVerification() {
 }
 
 /**
+ * Transformed workflow response for component consumption
+ */
+export interface TransformedWorkflowData {
+  repositories: Array<{
+    name: string;
+    status: 'pending' | 'running' | 'completed' | 'failed';
+    patterns_extracted: number;
+    dependencies_discovered: number;
+    phases: Array<{
+      name: string;
+      status: 'pending' | 'running' | 'completed' | 'failed';
+      error?: string;
+    }>;
+    error?: string;
+  }>;
+  overall_progress: number;
+  status: string;
+  workflow_id: string;
+  error?: string | null;
+}
+
+/**
  * Get workflow status with transformation for components
  * Converts backend response format to component-friendly format
  */
 export function useWorkflowStatusTransformed(workflowId: string | null) {
   const baseQuery = useWorkflowStatus(workflowId);
-  
+
   if (!baseQuery.data) {
+    const emptyData: TransformedWorkflowData = {
+      repositories: [],
+      overall_progress: 0,
+      status: 'pending',
+      workflow_id: workflowId || '',
+    };
+
     return {
       ...baseQuery,
-      data: null,
+      data: emptyData,
       repositories: [],
       overall_progress: 0,
     };
   }
 
   const transformed = transformWorkflowResponse(baseQuery.data);
-  
+
   return {
     ...baseQuery,
-    data: transformed,
+    data: transformed as TransformedWorkflowData,
     repositories: transformed.repositories,
     overall_progress: transformed.overall_progress,
   };

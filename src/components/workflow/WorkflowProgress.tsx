@@ -14,11 +14,11 @@ import {
   Tooltip,
 } from '@mui/material';
 import { Refresh as RefreshIcon } from '@mui/icons-material';
-import { WorkflowStatusResponse } from '../../services/a2aClient';
+import { TransformedWorkflowData } from '../../hooks/useWorkflow';
 
 export interface WorkflowProgressProps {
   workflowId: string;
-  status?: WorkflowStatusResponse;
+  status?: TransformedWorkflowData;
   isLoading?: boolean;
   onViewResults: () => void;
   onRefresh: () => void;

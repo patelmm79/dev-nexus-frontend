@@ -265,7 +265,7 @@ export type ErrorResponse = z.infer<typeof ErrorResponseSchema>
 export const HealthCheckResponseSchema = z.object({
   status: z.enum(['healthy', 'degraded', 'unhealthy']),
   timestamp: z.string().datetime({}),
-  services: z.record(z.record(z.string(), z.unknown())),
+  services: z.record(z.string(), z.record(z.string(), z.unknown())),
   version: z.string(),
   uptime_seconds: z.number().int().nonnegative(),
 })
@@ -286,7 +286,7 @@ export const AgentCardResponseSchema = z.object({
   protocols: z.array(z.string()),
   capabilities: z.array(z.string()),
   skills: z.array(z.record(z.string(), z.unknown())),
-  contact: z.record(z.string()).optional(),
+  contact: z.record(z.string(), z.string()).optional(),
 })
 
 export type AgentCardResponse = z.infer<typeof AgentCardResponseSchema>
@@ -361,5 +361,5 @@ ${JSON.stringify(response, null, 2)}
     throw new Error(errorMessage)
   }
 
-  return result.data
+  return result.data as AnySkillResponse
 }

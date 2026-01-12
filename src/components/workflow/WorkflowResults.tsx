@@ -13,7 +13,8 @@ import {
 } from '@mui/material';
 import DependencyVerification, { Dependency } from './DependencyVerification';
 import ResultsMetadataView from './ResultsMetadataView';
-import { WorkflowStatusResponse, WorkflowMetadata } from '../../services/a2aClient';
+import { WorkflowMetadata } from '../../services/a2aClient';
+import { TransformedWorkflowData } from '../../hooks/useWorkflow';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -38,7 +39,7 @@ function TabPanel(props: TabPanelProps) {
 }
 
 export interface WorkflowResultsProps {
-  workflowStatus?: WorkflowStatusResponse;
+  workflowStatus?: TransformedWorkflowData;
   metadata?: WorkflowMetadata[];
   dependencies?: Dependency[];
   onStartNew: () => void;

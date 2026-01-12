@@ -5,7 +5,7 @@
  * Backend returns repositories as strings, components expect objects with status/phases.
  */
 
-import { WorkflowStatusResponse } from './schemas/skillResponses'
+import { WorkflowStatusResponse } from '../services/a2aClient'
 
 /**
  * Repository status after transformation
@@ -50,19 +50,19 @@ export function transformWorkflowResponse(response: WorkflowStatusResponse): {
   // Extract phases from results array
   const phasesByRepo = new Map<string, Map<string, any>>()
   if (response.results && Array.isArray(response.results)) {
-    response.results.forEach(result => {
-      const repo = result.repository || ''
+    response.results.forEach((result: any) => {
+      const repo = (result.repository as string) || ''
       if (!phasesByRepo.has(repo)) {
         phasesByRepo.set(repo, new Map())
       }
 
-      const phaseName = result.phase || 'unknown'
+      const phaseName = (result.phase as string) || 'unknown'
       phasesByRepo.get(repo)?.set(phaseName, result)
     })
   }
 
   // Build transformed repositories array
-  const transformedRepos: TransformedRepository[] = response.repositories.map(repoName => {
+  const transformedRepos: TransformedRepository[] = response.repositories.map((repoName: string) => {
     const repoResults = phasesByRepo.get(repoName) || new Map()
 
     // Determine overall repo status (if any phase failed, repo failed)
@@ -92,10 +92,10 @@ export function transformWorkflowResponse(response: WorkflowStatusResponse): {
     return {
       name: repoName,
       status: repoStatus,
-      patterns_extracted: repoResults.get('pattern_extraction')?.patterns_extracted || 0,
-      dependencies_discovered: repoResults.get('dependency_discovery')?.dependencies_discovered || 0,
+      patterns_extracted: repoResults.get('pattern_extraction' as string)?.patterns_extracted || 0,
+      dependencies_discovered: repoResults.get('dependency_discovery' as string)?.dependencies_discovered || 0,
       phases,
-      error: repoResults.get('error'),
+      error: repoResults.get('error' as string),
     }
   })
 
