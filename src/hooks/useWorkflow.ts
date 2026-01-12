@@ -71,13 +71,24 @@ export function useTriggerWorkflow() {
       a2aClient.triggerFullAnalysisWorkflow(input),
     onSuccess: (data: TriggerFullAnalysisResponse) => {
       console.log('🎯 Full trigger response:', data);
-      console.log('   Repositories processed:', data.repositories_processed);
+
+      // Calculate repository count from workflow_steps or use repositories_processed
+      const repoCount = data.repositories_processed !== undefined
+        ? data.repositories_processed
+        : (data.workflow_steps ?
+            new Set(data.workflow_steps.map((step: any) => step.repository)).size
+            : 0);
+
+      console.log('   Repositories processed:', repoCount);
       console.log('   Timestamp:', data.timestamp);
 
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['workflowMetadata'] });
 
-      toast.success(`Workflow completed! ${data.repositories_processed} repository analyzed.`);
+      const message = repoCount === 1
+        ? 'Workflow completed! 1 repository analyzed.'
+        : `Workflow completed! ${repoCount} repositories analyzed.`;
+      toast.success(message);
     },
     onError: (error: Error) => {
       toast.error(`Failed to trigger workflow: ${error.message}`);
