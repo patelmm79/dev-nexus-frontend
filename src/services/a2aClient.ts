@@ -1525,13 +1525,11 @@ class A2AClient {
   }
 
   /**
-   * Get workflow status and progress
+   * Poll workflow status using direct HTTP GET endpoint
+   * The backend provides the polling endpoint in the async_queued response
    */
   async getWorkflowStatus(workflowId: string): Promise<WorkflowStatusResponse> {
-    const response = await this.client.post<WorkflowStatusResponse>('/a2a/execute', {
-      skill_id: 'get_workflow_status',
-      input: { workflow_id: workflowId },
-    });
+    const response = await this.client.get<WorkflowStatusResponse>(`/a2a/workflow/${workflowId}`);
     return response.data;
   }
 
