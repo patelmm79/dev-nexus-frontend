@@ -21,7 +21,9 @@
       "Bash(grep:*)",
       "Bash(npm audit fix:*)",
       "Bash(dir \"c:\\\\Users\\\\insan\\\\PycharmProjects\\\\dev-nexus-frontend\\\\src\\\\pages\")",
-      "Bash(dir \"c:\\\\Users\\\\insan\\\\PycharmProjects\\\\dev-nexus-frontend\\\\src\\\\hooks\")"
+      "Bash(dir \"c:\\\\Users\\\\insan\\\\PycharmProjects\\\\dev-nexus-frontend\\\\src\\\\hooks\")",
+      "Bash(TypeScript types. If field names don 't match, update the interface to match)",
+      "Bash(reality, not the other way around.\"\n\nVerified: npm run type-check \\(0 errors\\), npm run build \\(success\\)\n\nCo-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

@@ -1623,6 +1623,113 @@ class A2AClient {
 
     return response.data as SkillExecutionResponse;
   }
+
+  // ============================================
+  // Phase 12: Response Validation & Utilities
+  // ============================================
+
+  /**
+   * Validate response structure matches StandardSkillResponse format
+   * @param response Response to validate
+   * @returns true if response has required fields (success, timestamp, execution_time_ms)
+   */
+  isValidResponse(response: any): boolean {
+    if (!response || typeof response !== 'object') {
+      return false;
+    }
+
+    // Check required fields per Phase 11 standard
+    const hasSuccess = typeof response.success === 'boolean';
+    const hasTimestamp = typeof response.timestamp === 'string';
+    const hasExecutionTime = typeof response.execution_time_ms === 'number';
+
+    if (!hasSuccess || !hasTimestamp || !hasExecutionTime) {
+      console.warn('Invalid response structure missing required fields', {
+        hasSuccess,
+        hasTimestamp,
+        hasExecutionTime,
+        response,
+      });
+      return false;
+    }
+
+    // If success=false, error field should be present
+    if (!response.success && !response.error) {
+      console.warn('Failed response missing error field', response);
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Extract execution time from response
+   * @param response StandardSkillResponse
+   * @returns execution time in milliseconds
+   */
+  getExecutionTime(response: StandardSkillResponse): number {
+    return response.execution_time_ms ?? 0;
+  }
+
+  /**
+   * Extract and parse timestamp from response
+   * @param response StandardSkillResponse
+   * @returns parsed Date object
+   */
+  getTimestamp(response: StandardSkillResponse): Date {
+    try {
+      return new Date(response.timestamp);
+    } catch {
+      console.warn('Invalid timestamp format:', response.timestamp);
+      return new Date();
+    }
+  }
+
+  /**
+   * Check if response indicates an error
+   * @param response StandardSkillResponse
+   * @returns true if success=false
+   */
+  isError(response: StandardSkillResponse): boolean {
+    return response.success === false;
+  }
+
+  /**
+   * Get error message from response
+   * @param response StandardSkillResponse
+   * @returns error message or empty string if no error
+   */
+  getErrorMessage(response: StandardSkillResponse): string {
+    if (this.isError(response)) {
+      return response.error || 'Unknown error occurred';
+    }
+    return '';
+  }
+
+  /**
+   * Get error metadata if present
+   * @param response StandardSkillResponse
+   * @returns error metadata or empty object
+   */
+  getErrorMetadata(response: StandardSkillResponse): Record<string, any> {
+    if (this.isError(response) && response.metadata) {
+      return response.metadata;
+    }
+    return {};
+  }
+
+  /**
+   * Format response for logging (include key information)
+   * @param response StandardSkillResponse
+   * @param skillId Skill identifier for context
+   * @returns formatted log message
+   */
+  formatResponseLog(response: StandardSkillResponse, skillId: string): string {
+    const status = response.success ? '✅' : '❌';
+    const time = response.execution_time_ms;
+    const error = this.isError(response) ? ` | Error: ${response.error}` : '';
+    return `${status} ${skillId}: ${time}ms${error}`;
+  }
 }
 
 // ============================================
