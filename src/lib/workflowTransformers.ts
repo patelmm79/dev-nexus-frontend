@@ -26,12 +26,13 @@ export interface TransformedRepository {
 /**
  * Transform backend WorkflowStatusResponse to component-friendly format
  *
- * Backend returns:
- * - repositories: ["repo1", "repo2"] (strings)
- * - results: [{repository: "repo1", phase: "...", ...}] (flat array)
+ * Phase 12: Backend now returns standardized progress metrics
+ * - repositories_count: Total repositories in workflow
+ * - repositories_completed: Number of completed repositories
+ * - progress_percent: Overall progress 0-100%
+ * - results: Optional detailed results by repository
  *
- * This creates:
- * - repositories: [{name: "repo1", status: "...", phases: [...]}] (objects)
+ * This creates component-friendly format with repositories array and overall progress
  */
 export function transformWorkflowResponse(response: WorkflowStatusResponse): {
   repositories: TransformedRepository[]
@@ -39,70 +40,50 @@ export function transformWorkflowResponse(response: WorkflowStatusResponse): {
   status: string
   workflow_id: string
 } {
-  // Map of repo name to its phases
-  const repoPhases = new Map<string, any[]>()
+  // Phase 12: Use new standardized progress metrics
+  const overall_progress = response.progress_percent || 0
+  const totalRepos = response.repositories_count || 0
+  const completedRepos = response.repositories_completed || 0
 
-  // Initialize all repos
-  response.repositories.forEach(repoName => {
-    repoPhases.set(repoName, [])
-  })
+  // Build transformed repositories array from results
+  const transformedRepos: TransformedRepository[] = []
 
-  // Extract phases from results array
-  const phasesByRepo = new Map<string, Map<string, any>>()
   if (response.results && Array.isArray(response.results)) {
+    // Group results by repository if available
+    const repoResultsMap = new Map<string, any>()
+
     response.results.forEach((result: any) => {
-      const repo = (result.repository as string) || ''
-      if (!phasesByRepo.has(repo)) {
-        phasesByRepo.set(repo, new Map())
+      const repoName = (result.repository || result.name || '') as string
+      if (repoName) {
+        repoResultsMap.set(repoName, result)
       }
-
-      const phaseName = (result.phase as string) || 'unknown'
-      phasesByRepo.get(repo)?.set(phaseName, result)
-    })
-  }
-
-  // Build transformed repositories array
-  const transformedRepos: TransformedRepository[] = response.repositories.map((repoName: string) => {
-    const repoResults = phasesByRepo.get(repoName) || new Map()
-
-    // Determine overall repo status (if any phase failed, repo failed)
-    let repoStatus: 'pending' | 'running' | 'completed' | 'failed' = 'pending'
-    let hasCompleted = false
-    let hasRunning = false
-    let hasFailed = false
-
-    repoResults.forEach(result => {
-      const phaseStatus = result.status || 'pending'
-      if (phaseStatus === 'failed') hasFailed = true
-      if (phaseStatus === 'running') hasRunning = true
-      if (phaseStatus === 'completed') hasCompleted = true
     })
 
-    if (hasFailed) repoStatus = 'failed'
-    else if (hasRunning) repoStatus = 'running'
-    else if (hasCompleted) repoStatus = 'completed'
-
-    // Build phases array
-    const phases = Array.from(repoResults.entries()).map(([phaseName, phaseData]) => ({
-      name: phaseName,
-      status: phaseData.status || 'pending',
-      error: phaseData.error,
-    }))
-
-    return {
-      name: repoName,
-      status: repoStatus,
-      patterns_extracted: repoResults.get('pattern_extraction' as string)?.patterns_extracted || 0,
-      dependencies_discovered: repoResults.get('dependency_discovery' as string)?.dependencies_discovered || 0,
-      phases,
-      error: repoResults.get('error' as string),
+    // Transform each result into a repository object
+    repoResultsMap.forEach((resultData, repoName) => {
+      const repo: TransformedRepository = {
+        name: repoName,
+        status: (resultData.status as any) || 'pending',
+        patterns_extracted: resultData.patterns_extracted || 0,
+        dependencies_discovered: resultData.dependencies_discovered || 0,
+        phases: resultData.phases || [],
+        error: resultData.error,
+      }
+      transformedRepos.push(repo)
+    })
+  } else if (totalRepos > 0) {
+    // Fallback: Create placeholder repositories when detailed results unavailable
+    // This handles cases where backend only provides summary metrics
+    for (let i = 0; i < totalRepos; i++) {
+      transformedRepos.push({
+        name: `Repository ${i + 1}`,
+        status: i < completedRepos ? 'completed' : 'running',
+        patterns_extracted: 0,
+        dependencies_discovered: 0,
+        phases: [],
+      })
     }
-  })
-
-  // Calculate overall progress
-  const totalRepos = transformedRepos.length
-  const completedRepos = transformedRepos.filter(r => r.status === 'completed').length
-  const overall_progress = totalRepos > 0 ? Math.round((completedRepos / totalRepos) * 100) : 0
+  }
 
   return {
     repositories: transformedRepos,

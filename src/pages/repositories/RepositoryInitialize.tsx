@@ -75,15 +75,12 @@ export default function RepositoryInitialize() {
       return;
     }
 
-    // Only transition if workflow is in terminal state
-    const isTerminal = workflowStatus.status === 'completed' || workflowStatus.status === 'failed';
+    // Only transition if workflow is in terminal state (Phase 12: added partial_success)
+    const isTerminal =
+      workflowStatus.status === 'completed' ||
+      workflowStatus.status === 'failed' ||
+      workflowStatus.status === 'partial_success';
     if (!isTerminal) {
-      return;
-    }
-
-    // For completed workflows, verify that repositories array has data
-    if (workflowStatus.status === 'completed' && (!workflowStatus.repositories || workflowStatus.repositories.length === 0)) {
-      console.log('⏳ Workflow status is completed but repositories array is empty, waiting for data...');
       return;
     }
 

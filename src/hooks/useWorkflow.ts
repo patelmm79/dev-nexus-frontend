@@ -181,11 +181,12 @@ export function useUpdateDependencyVerification() {
 
 /**
  * Transformed workflow response for component consumption
+ * Phase 12: Updated to match standardized backend response
  */
 export interface TransformedWorkflowData {
   repositories: Array<{
     name: string;
-    status: 'pending' | 'running' | 'completed' | 'failed';
+    status: 'pending' | 'running' | 'completed' | 'failed' | 'partial_success';
     patterns_extracted: number;
     dependencies_discovered: number;
     phases: Array<{
@@ -196,7 +197,7 @@ export interface TransformedWorkflowData {
     error?: string;
   }>;
   overall_progress: number;
-  status: string;
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'partial_success';
   workflow_id: string;
   error?: string | null;
 }
@@ -212,7 +213,7 @@ export function useWorkflowStatusTransformed(workflowId: string | null) {
     const emptyData: TransformedWorkflowData = {
       repositories: [],
       overall_progress: 0,
-      status: 'pending',
+      status: 'queued',
       workflow_id: workflowId || '',
     };
 

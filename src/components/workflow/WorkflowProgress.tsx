@@ -40,7 +40,10 @@ export default function WorkflowProgress({
   });
 
   const isComplete =
-    status && (status.status === 'completed' || status.status === 'failed');
+    status &&
+    (status.status === 'completed' ||
+      status.status === 'failed' ||
+      status.status === 'partial_success');
 
   const getPhaseColor = (
     phaseStatus: 'pending' | 'running' | 'completed' | 'failed'
@@ -126,6 +129,18 @@ export default function WorkflowProgress({
                     {status.error}
                   </Typography>
                 )}
+              </Alert>
+            )}
+
+            {status.status === 'partial_success' && (
+              <Alert severity="warning">
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  Workflow Completed with Partial Success
+                </Typography>
+                <Typography variant="caption" sx={{ display: 'block', mt: 1 }}>
+                  Some repositories completed successfully, others may have encountered issues.
+                  Overall progress: {status.overall_progress}%
+                </Typography>
               </Alert>
             )}
 

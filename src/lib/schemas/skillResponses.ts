@@ -195,33 +195,45 @@ export const GetRepositoryListResponseSchema = StandardSkillResponseSchema.exten
 export type GetRepositoryListResponse = z.infer<typeof GetRepositoryListResponseSchema>
 
 /**
-/**
  * Workflow status response
  *
- * Used for polling long-running analysis workflows
- * Note: repositories array contains STRINGS (repo names), not objects
+ * Phase 12: Updated field names for consistency
+ * - repositories_count: Total repositories in workflow
+ * - repositories_completed: Number of completed repositories
+ * - progress_percent: Overall progress 0-100%
  */
 export const WorkflowStatusResponseSchema = z.object({
   workflow_id: z.string().describe('Unique workflow identifier'),
   status: z
-    .enum(['pending', 'queued', 'running', 'completed', 'failed'])
+    .enum(['queued', 'running', 'completed', 'failed', 'partial_success'])
     .describe('Current workflow status'),
-  repositories: z
-    .array(z.string())
-    .describe('Repository names (strings, not objects)'),
-  created_at: z.string().datetime({}).describe('ISO 8601 timestamp when workflow was created'),
-  started_at: z.string().datetime({}).optional().describe('ISO 8601 timestamp when workflow started'),
-  completed_at: z.string().datetime({}).optional().describe('ISO 8601 timestamp when workflow completed'),
-  error: z.string().nullable().optional().describe('Error message if workflow failed'),
-  metadata: z
-    .record(z.string(), z.unknown())
-    .optional()
-    .describe('Metadata: version, phase_count, repository_count, etc'),
+  repositories_count: z
+    .number()
+    .int()
+    .nonnegative()
+    .describe('Total repositories in workflow'),
+  repositories_completed: z
+    .number()
+    .int()
+    .nonnegative()
+    .describe('Number of repositories completed'),
+  progress_percent: z
+    .number()
+    .int()
+    .min(0)
+    .max(100)
+    .describe('Overall progress percentage 0-100'),
   results: z
     .array(z.record(z.string(), z.unknown()))
     .optional()
-    .describe('Phase execution results'),
-  // Legacy/compatibility fields
+    .describe('Workflow results by repository'),
+  error: z.string().nullable().optional().describe('Error message if workflow failed'),
+  metadata: z
+    .record(z.string(), z.unknown())
+    .nullable()
+    .optional()
+    .describe('Optional metadata: warnings, features, etc'),
+  // Legacy/compatibility fields for backward compatibility
   timestamp: z.string().datetime({}).optional(),
   execution_time_ms: z.number().int().nonnegative().optional(),
   success: z.boolean().optional(),

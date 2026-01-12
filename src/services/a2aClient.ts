@@ -811,19 +811,24 @@ export interface TriggerFullAnalysisResponse {
 }
 
 /**
- * Workflow status response - actual structure from backend
- * Returns repository names and phase results (not objects)
+ * Workflow status response (Phase 12: Updated field names)
+ *
+ * Used for polling long-running analysis workflows.
+ * Returns standardized progress metrics for overall workflow tracking.
  */
 export interface WorkflowStatusResponse {
   workflow_id: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  repositories: string[]; // Repository names as strings
-  created_at: string; // ISO 8601 format
-  started_at?: string;
-  completed_at?: string;
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'partial_success';
+  repositories_count: number; // Total repositories in workflow
+  repositories_completed: number; // Number of completed repositories
+  progress_percent: number; // Overall progress 0-100%
+  results?: Record<string, any>[]; // Workflow results by repository
   error?: string | null;
-  metadata?: Record<string, any>; // { version, phase_count, repository_count, etc }
-  results?: WorkflowPhaseResult[]; // Phase execution results
+  metadata?: Record<string, any> | null;
+  // Legacy/compatibility fields
+  timestamp?: string;
+  execution_time_ms?: number;
+  success?: boolean;
 }
 
 export interface ExtractPatternsInput {
