@@ -734,12 +734,37 @@ export interface TriggerFullAnalysisInput {
   };
 }
 
+export interface WorkflowPhaseResult {
+  phase: string;
+  repository: string;
+  status: 'completed' | 'failed' | 'ready';
+  result?: {
+    success: boolean;
+    error?: string;
+    patterns_extracted?: number;
+    dependencies_discovered?: number;
+    message?: string;
+    [key: string]: any;
+  };
+  message?: string;
+  next_step?: string;
+}
+
 export interface TriggerFullAnalysisResponse {
   success: boolean;
-  workflow_id: string;
-  message: string;
-  repositories: string[];
-  start_time: string;
+  repositories_processed: number;
+  timestamp: string;
+  phases: {
+    pattern_extraction?: { status: string };
+    dependency_discovery?: { status: string };
+    component_analysis?: { status: string };
+  };
+  workflow_steps: WorkflowPhaseResult[];
+  phase_results: {
+    pattern_extraction?: any[];
+    dependency_discovery?: any[];
+    component_analysis?: any;
+  };
 }
 
 export interface WorkflowStatusResponse {

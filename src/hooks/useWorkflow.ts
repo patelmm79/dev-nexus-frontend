@@ -71,13 +71,13 @@ export function useTriggerWorkflow() {
       a2aClient.triggerFullAnalysisWorkflow(input),
     onSuccess: (data: TriggerFullAnalysisResponse) => {
       console.log('🎯 Full trigger response:', data);
-      console.log('   workflow_id field:', data.workflow_id);
-      console.log('   All keys:', Object.keys(data));
+      console.log('   Repositories processed:', data.repositories_processed);
+      console.log('   Timestamp:', data.timestamp);
 
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['workflowMetadata'] });
 
-      toast.success(data.message || 'Workflow triggered successfully!');
+      toast.success(`Workflow completed! ${data.repositories_processed} repository analyzed.`);
     },
     onError: (error: Error) => {
       toast.error(`Failed to trigger workflow: ${error.message}`);
