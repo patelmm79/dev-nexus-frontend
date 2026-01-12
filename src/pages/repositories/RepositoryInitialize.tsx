@@ -69,13 +69,28 @@ export default function RepositoryInitialize() {
   const { data: workflowStatus, refetch: refetchStatus, isLoading: isStatusLoading } = useWorkflowStatus(workflowId);
   const updateDepsMutation = useUpdateDependencyVerification();
 
-  // When workflow status indicates completion, move to results phase
+  // When workflow status indicates completion AND has data, move to results phase
   useEffect(() => {
-    if (isAsyncWorkflow && workflowStatus && (workflowStatus.status === 'completed' || workflowStatus.status === 'failed')) {
-      console.log('🏁 Async workflow reached terminal state:', workflowStatus.status);
-      setCurrentPhase('results');
+    if (!isAsyncWorkflow || !workflowStatus) {
+      return;
     }
-  }, [isAsyncWorkflow, workflowStatus?.status]);
+
+    // Only transition if workflow is in terminal state
+    const isTerminal = workflowStatus.status === 'completed' || workflowStatus.status === 'failed';
+    if (!isTerminal) {
+      return;
+    }
+
+    // For completed workflows, verify that repositories array has data
+    if (workflowStatus.status === 'completed' && (!workflowStatus.repositories || workflowStatus.repositories.length === 0)) {
+      console.log('⏳ Workflow status is completed but repositories array is empty, waiting for data...');
+      return;
+    }
+
+    console.log('🏁 Async workflow reached terminal state:', workflowStatus.status);
+    console.log('   Repositories count:', workflowStatus.repositories?.length || 0);
+    setCurrentPhase('results');
+  }, [isAsyncWorkflow, workflowStatus?.status, workflowStatus?.repositories?.length]);
 
   const handleStartWorkflow = async (
     repositories: string[],
