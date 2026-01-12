@@ -1455,7 +1455,10 @@ class A2AClient {
   ): Promise<TriggerFullAnalysisResponse> {
     const response = await this.client.post<TriggerFullAnalysisResponse>('/a2a/execute', {
       skill_id: 'trigger_full_analysis_workflow',
-      input,
+      input: {
+        repositories: input.repository_names,
+        phases: input.phases,
+      },
     });
     return response.data;
   }
