@@ -107,11 +107,11 @@ export default function WorkflowProgress({
           <Stack spacing={2}>
             <Box>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                Overall Progress: {status.overall_progress}%
+                Overall Progress: {status.overall_progress ?? 0}%
               </Typography>
               <LinearProgress
                 variant="determinate"
-                value={status.overall_progress}
+                value={status.overall_progress ?? 0}
                 sx={{ height: 8, borderRadius: 1 }}
               />
             </Box>
@@ -143,7 +143,7 @@ export default function WorkflowProgress({
       {/* Repository Status Cards */}
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 2 }}>
         {(status.repositories || []).map((repo) => (
-          <Card key={repo.name} sx={{ height: '100%' }}>
+          <Card key={`repo-${repo.name}`} sx={{ height: '100%' }}>
             <CardHeader
               title={repo.name}
               subheader={`Status: ${repo.status}`}
