@@ -70,6 +70,10 @@ export function useTriggerWorkflow() {
     mutationFn: (input: TriggerFullAnalysisInput) =>
       a2aClient.triggerFullAnalysisWorkflow(input),
     onSuccess: (data: TriggerFullAnalysisResponse) => {
+      console.log('🎯 Full trigger response:', data);
+      console.log('   workflow_id field:', data.workflow_id);
+      console.log('   All keys:', Object.keys(data));
+
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['workflowMetadata'] });
 

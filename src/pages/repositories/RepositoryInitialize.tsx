@@ -34,10 +34,17 @@ export default function RepositoryInitialize() {
       });
 
       console.log('✅ Workflow triggered:', result);
+      console.log('   Full result object:', JSON.stringify(result, null, 2));
+      console.log('   result.success:', result.success);
+      console.log('   result.workflow_id:', result.workflow_id);
+      console.log('   Available keys:', Object.keys(result));
+
       if (result.success) {
         console.log('📝 Setting workflow ID:', result.workflow_id);
         setWorkflowId(result.workflow_id);
         setCurrentPhase('executing');
+      } else {
+        console.error('❌ Workflow trigger was not successful');
       }
     } catch (error) {
       // Error handled by mutation hook toast
