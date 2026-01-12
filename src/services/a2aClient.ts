@@ -2,6 +2,42 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import { SkillExecutionResponse, AgentCard } from '../types/agents';
 
 // ============================================
+// Phase 11: Standardized Response Format
+// ============================================
+
+/**
+ * Standard response structure for all A2A skill executions
+ * All skill responses follow this format with optional skill-specific fields
+ */
+export interface StandardSkillResponse {
+  success: boolean;
+  timestamp: string; // ISO 8601 format
+  execution_time_ms: number;
+  error?: string; // Only present on failures
+  metadata?: Record<string, any>; // Optional context data
+  [key: string]: any; // Skill-specific fields at root level
+}
+
+/**
+ * Async workflow response - indicates the workflow was queued for later execution
+ */
+export interface AsyncWorkflowResponse extends StandardSkillResponse {
+  state: 'async_queued';
+  workflow_id: string;
+  polling_interval_ms: number;
+}
+
+/**
+ * Async workflow status - used when polling for workflow results
+ */
+export interface WorkflowStatusMetadata {
+  state: 'queued' | 'running' | 'completed' | 'failed';
+  progress_percent?: number;
+  current_step?: string;
+  estimated_remaining_ms?: number;
+}
+
+// ============================================
 // TypeScript Types
 // ============================================
 
