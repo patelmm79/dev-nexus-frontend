@@ -1,6 +1,6 @@
 import { Typography, Box, Card, CardContent, Chip, CircularProgress, Alert, Button } from '@mui/material';
 import { Folder, AccessTime, Search } from '@mui/icons-material';
-import { useRepositories, useScanComponents } from '../hooks/usePatterns';
+import { useRepositories, useScanComponents, useListComponents } from '../hooks/usePatterns';
 import { formatDistanceToNow } from 'date-fns';
 import { useState } from 'react';
 import { ScanRepositoryComponentsResponse, Repository } from '../services/a2aClient';
@@ -19,7 +19,10 @@ interface RepositoryCardProps {
 }
 
 function RepositoryCard({ repo, scanResult, onScan }: RepositoryCardProps) {
-  const componentCount = scanResult?.result?.components_found || 0;
+  console.log(`[RepositoryCard] Rendering repo: ${repo.name}`);
+  const { data: componentsData, isLoading, error, status } = useListComponents(repo.name);
+  console.log(`[RepositoryCard] ${repo.name} - componentsData:`, componentsData, 'status:', status, 'error:', error);
+  const componentCount = componentsData?.total_count || scanResult?.result?.components_found || 0;
 
   return (
     <Card>
