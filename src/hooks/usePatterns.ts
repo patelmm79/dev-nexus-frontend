@@ -311,12 +311,10 @@ export function useListComponents(
   limit: number = 100,
   offset: number = 0
 ) {
-  const queryResult = useQuery({
+  return useQuery({
     queryKey: ['listComponents', repository, componentType, limit, offset],
     queryFn: async () => {
-      console.log(`[useListComponents] Fetching components for: ${repository}`);
       const result = await a2aClient.listComponents(repository, componentType, limit, offset);
-      console.log(`[useListComponents] Got response for ${repository}:`, result);
 
       // Handle backend errors
       if ((result as any).error) {
@@ -333,12 +331,6 @@ export function useListComponents(
     staleTime: 5 * 60 * 1000, // 5 minutes
     enabled: !!repository, // Only fetch if repository is provided
   });
-
-  if (!repository) {
-    console.log('[useListComponents] Skipping query - no repository provided');
-  }
-
-  return queryResult;
 }
 
 /**

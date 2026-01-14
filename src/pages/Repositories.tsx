@@ -19,9 +19,7 @@ interface RepositoryCardProps {
 }
 
 function RepositoryCard({ repo, scanResult, onScan }: RepositoryCardProps) {
-  console.log(`[RepositoryCard] Rendering repo: ${repo.name}`);
-  const { data: componentsData, isLoading, error, status } = useListComponents(repo.name);
-  console.log(`[RepositoryCard] ${repo.name} - componentsData:`, componentsData, 'status:', status, 'error:', error);
+  const { data: componentsData } = useListComponents(repo.name);
   const componentCount = componentsData?.total_count || scanResult?.result?.components_found || 0;
 
   return (
@@ -36,7 +34,7 @@ function RepositoryCard({ repo, scanResult, onScan }: RepositoryCardProps) {
 
         <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
           <Chip
-            label={`${repo.latest_patterns?.patterns?.length || 0} patterns`}
+            label={`${repo.pattern_count || 0} patterns`}
             size="small"
             color="primary"
             variant="outlined"
@@ -56,12 +54,12 @@ function RepositoryCard({ repo, scanResult, onScan }: RepositoryCardProps) {
         </Box>
 
         <Typography variant="body2" color="text.secondary" gutterBottom>
-          Domain: {repo.latest_patterns?.problem_domain || 'Unknown'}
+          Domain: {repo.problem_domain || 'Unknown'}
         </Typography>
 
-        {repo.latest_patterns?.keywords && (
+        {repo.keywords && repo.keywords.length > 0 && (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 2, mb: 2 }}>
-            {repo.latest_patterns.keywords.slice(0, 5).map((keyword, idx) => (
+            {repo.keywords.slice(0, 5).map((keyword, idx) => (
               <Chip key={idx} label={keyword} size="small" />
             ))}
           </Box>

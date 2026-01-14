@@ -98,15 +98,16 @@ export interface QueryPatternsResponse {
 
 export interface Repository {
   name: string;
-  latest_patterns: PatternData;
-  history_count: number;
+  pattern_count: number;
+  problem_domain: string;
+  keywords: string[];
   last_updated: string;
 }
 
 export interface GetRepositoryListResponse {
   success: boolean;
   repositories: Repository[];
-  total_count: number;
+  total_repositories: number;
 }
 
 export interface DeploymentScript {
