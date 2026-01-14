@@ -66,7 +66,7 @@ export default function ComponentDetection({ repository }: ComponentDetectionPro
   }, [analysisStartTime, targetRepository]);
 
   const { data: componentsData } = useListComponents(repository);
-  const totalComponentsScanned = componentsData?.total_components || componentsData?.total_count || 0;
+  const totalComponentsScanned = componentsData?.total_components ?? 0;
 
   const suggestMutation = useSuggestPattern();
   const createMutation = useCreatePattern();

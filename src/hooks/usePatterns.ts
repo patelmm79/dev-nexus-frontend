@@ -323,7 +323,7 @@ export function useListComponents(
           available_skills: (result as any).available_skills,
         });
         // Return empty result on error so UI doesn't crash
-        return { success: false, components: [], total_count: 0, filtered_count: 0, offset: 0, limit: 0 } as any;
+        return { success: false, components: [], total_components: 0, filtered_count: 0 } as any;
       }
 
       return result;

@@ -200,7 +200,7 @@ export function createRepositoryListResponse(
       history_count: 1,
       last_updated: new Date().toISOString(),
     })),
-    total_count: repositories.length,
+    total_repositories: repositories.length,
   });
 }
 

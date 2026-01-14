@@ -109,8 +109,7 @@ export interface Repository {
 export interface GetRepositoryListResponse {
   success: boolean;
   repositories: Repository[];
-  total_repositories?: number;
-  total_count?: number;
+  total_repositories: number;
 }
 
 export interface DeploymentScript {
@@ -312,11 +311,8 @@ export interface ComponentMetadata {
 export interface ListComponentsResponse {
   success: boolean;
   components: ComponentMetadata[];
-  total_components?: number;
-  total_count?: number;
+  total_components: number;
   filtered_count: number;
-  offset?: number;
-  limit?: number;
   filters?: Record<string, any>;
   pagination?: {
     limit: number;

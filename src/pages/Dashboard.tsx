@@ -50,7 +50,7 @@ export default function Dashboard() {
 
         <StatCard
           title="Repositories"
-          value={repos?.total_repositories || repos?.total_count || 0}
+          value={repos?.total_repositories ?? 0}
           icon={<Folder />}
           color="primary"
           loading={reposLoading}
