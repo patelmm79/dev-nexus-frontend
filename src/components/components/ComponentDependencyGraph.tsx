@@ -266,7 +266,7 @@ export default function ComponentDependencyGraph({ repository }: ComponentDepend
           </Box>
           <Chip
             size="small"
-            label={`${componentsData?.total_count || 0} components, ${analyzedComponents.size} analyzed`}
+            label={`${componentsData?.total_components || componentsData?.total_count || 0} components, ${analyzedComponents.size} analyzed`}
             color="primary"
           />
         </Box>
@@ -315,7 +315,7 @@ export default function ComponentDependencyGraph({ repository }: ComponentDepend
               >
                 <CircularProgress size={20} />
                 <Typography variant="body2">
-                  Analyzing components... ({analyzedComponents.size}/{componentsData?.total_count})
+                  Analyzing components... ({analyzedComponents.size}/{componentsData?.total_components || componentsData?.total_count})
                 </Typography>
               </Box>
             )}

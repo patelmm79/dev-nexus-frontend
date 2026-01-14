@@ -312,11 +312,16 @@ export interface ComponentMetadata {
 export interface ListComponentsResponse {
   success: boolean;
   components: ComponentMetadata[];
-  total_count: number;
+  total_components?: number;
+  total_count?: number;
   filtered_count: number;
-  offset: number;
-  limit: number;
+  offset?: number;
+  limit?: number;
   filters?: Record<string, any>;
+  pagination?: {
+    limit: number;
+    offset: number;
+  };
 }
 
 // ============================================

@@ -83,7 +83,7 @@ export default function ConsolidationPlan({ repository }: ConsolidationPlanProps
             <Typography color="textSecondary" gutterBottom>
               Total Components
             </Typography>
-            <Typography variant="h5">{data?.total_count || 0}</Typography>
+            <Typography variant="h5">{data?.total_components || data?.total_count || 0}</Typography>
           </CardContent>
         </Card>
         <Card>
@@ -108,7 +108,7 @@ export default function ConsolidationPlan({ repository }: ConsolidationPlanProps
       <Card>
         <CardHeader
           title="Repository Components"
-          subheader={`${filteredComponents.length} of ${data?.total_count || 0} components`}
+          subheader={`${filteredComponents.length} of ${data?.total_components || data?.total_count || 0} components`}
           action={
             <TextField
               size="small"

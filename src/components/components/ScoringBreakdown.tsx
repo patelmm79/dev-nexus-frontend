@@ -82,7 +82,7 @@ export default function ScoringBreakdown({ repository }: ScoringBreakdownProps) 
             <Typography color="textSecondary" gutterBottom>
               Total Components
             </Typography>
-            <Typography variant="h5">{data?.total_count || 0}</Typography>
+            <Typography variant="h5">{data?.total_components || data?.total_count || 0}</Typography>
           </CardContent>
         </Card>
         <Card>
@@ -106,7 +106,7 @@ export default function ScoringBreakdown({ repository }: ScoringBreakdownProps) 
       <Card>
         <CardHeader
           title="Repository Components"
-          subheader={`${filteredComponents.length} of ${data?.total_count || 0} components`}
+          subheader={`${filteredComponents.length} of ${data?.total_components || data?.total_count || 0} components`}
           action={
             <TextField
               size="small"
