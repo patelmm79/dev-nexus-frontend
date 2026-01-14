@@ -34,7 +34,7 @@ function RepositoryCard({ repo, scanResult, onScan }: RepositoryCardProps) {
 
         <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
           <Chip
-            label={`${repo.pattern_count || 0} patterns`}
+            label={`${repo.pattern_count || repo.latest_patterns?.patterns?.length || 0} patterns`}
             size="small"
             color="primary"
             variant="outlined"
@@ -54,16 +54,16 @@ function RepositoryCard({ repo, scanResult, onScan }: RepositoryCardProps) {
         </Box>
 
         <Typography variant="body2" color="text.secondary" gutterBottom>
-          Domain: {repo.problem_domain || 'Unknown'}
+          Domain: {repo.problem_domain || repo.latest_patterns?.problem_domain || 'Unknown'}
         </Typography>
 
-        {repo.keywords && repo.keywords.length > 0 && (
+        {(repo.keywords?.length || repo.latest_patterns?.keywords?.length) ? (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 2, mb: 2 }}>
-            {repo.keywords.slice(0, 5).map((keyword, idx) => (
+            {(repo.keywords || repo.latest_patterns?.keywords || []).slice(0, 5).map((keyword, idx) => (
               <Chip key={idx} label={keyword} size="small" />
             ))}
           </Box>
-        )}
+        ) : null}
 
         <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
           <Button
