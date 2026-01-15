@@ -121,7 +121,7 @@ function RepositoryCard({ repo, scanResult, onScan, onAnalyzeComplexity, isAnaly
               disabled={complexityLoading || isRefreshing || isAnalyzing}
               sx={{ flex: 1 }}
             >
-              {isAnalyzing ? 'Calculating...' : complexityLoading || isRefreshing ? 'Loading...' : 'Analyze'}
+              {isAnalyzing ? 'Analyzing...' : complexityLoading || isRefreshing ? 'Loading...' : 'Analyze'}
             </Button>
           </Box>
           {complexityData?.success && (
@@ -225,7 +225,14 @@ export default function Repositories() {
   const handleAnalyzeComplexity = async (repositoryName: string) => {
     setAnalyzingRepository(repositoryName);
     try {
+      // First, scan components if not already scanned
+      if (!scanResults[repositoryName]?.result?.success) {
+        await scanMutation.mutateAsync(repositoryName);
+      }
+
+      // Then, trigger complexity analysis calculation
       await analyzeMutation.mutateAsync(repositoryName);
+
       // Navigate to dashboard after calculation completes
       navigate(`/complexity/${encodeURIComponent(repositoryName)}`);
     } finally {
