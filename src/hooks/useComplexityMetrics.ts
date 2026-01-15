@@ -26,21 +26,24 @@ export function useComplexityAnalysis(repository: string) {
 }
 
 /**
- * Trigger new complexity analysis
+ * Refresh complexity analysis by invalidating cache and refetching
  */
 export function useTriggerComplexityAnalysis() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (repository: string) => a2aClient.triggerComplexityAnalysis(repository),
+    mutationFn: (repository: string) => {
+      // Invalidate cache to trigger a fresh fetch
+      queryClient.invalidateQueries({ queryKey: ['complexityAnalysis', repository] });
+      return Promise.resolve();
+    },
     onSuccess: async (_, repository) => {
-      // Invalidate and refetch complexity analysis
-      await queryClient.invalidateQueries({ queryKey: ['complexityAnalysis', repository] });
+      // Refetch complexity analysis after invalidating
       await queryClient.refetchQueries({ queryKey: ['complexityAnalysis', repository] });
-      toast.success('Complexity analysis triggered successfully!');
+      toast.success('Complexity analysis refreshed successfully!');
     },
     onError: (error: Error) => {
-      toast.error(`Failed to trigger analysis: ${error.message}`);
+      toast.error(`Failed to refresh analysis: ${error.message}`);
     },
   });
 }

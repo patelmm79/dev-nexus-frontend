@@ -1800,22 +1800,11 @@ class A2AClient {
   }
 
   /**
-   * Get complexity analysis for a repository
+   * Get complexity analysis details for a repository
    */
   async getComplexityAnalysis(repository: string): Promise<GetComplexityAnalysisResponse> {
     const response = await this.client.post<GetComplexityAnalysisResponse>('/a2a/execute', {
-      skill_id: 'get_complexity_analysis',
-      input: { repository },
-    });
-    return response.data;
-  }
-
-  /**
-   * Trigger new complexity analysis for a repository
-   */
-  async triggerComplexityAnalysis(repository: string): Promise<TriggerComplexityAnalysisResponse> {
-    const response = await this.client.post<TriggerComplexityAnalysisResponse>('/a2a/execute', {
-      skill_id: 'trigger_complexity_analysis',
+      skill_id: 'get_repository_complexity_details',
       input: { repository },
     });
     return response.data;
