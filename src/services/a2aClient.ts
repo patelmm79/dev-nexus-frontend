@@ -351,6 +351,51 @@ export interface ComplexityDistribution {
   percentage: number;
 }
 
+// ============================================
+// Actual Backend Complexity Response Types
+// ============================================
+
+interface MetricsDistribution {
+  LOW: number;
+  HIGH: number;
+  MEDIUM: number;
+  CRITICAL: number;
+}
+
+interface MetricData {
+  max: number;
+  total: number;
+  median: number;
+  average: number;
+  distribution: MetricsDistribution;
+  weighted_average: number;
+}
+
+interface ComplexityMetrics {
+  grade: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+  mccabe: MetricData;
+  simple: MetricData;
+  primary: string;
+  cognitive: MetricData;
+  analyzed_at: string;
+  component_count: number;
+  staleness_days: number;
+}
+
+export interface GetComplexityAnalysisRawResponse {
+  success: boolean;
+  timestamp: string;
+  execution_time_ms: number;
+  error?: string;
+  repository: string;
+  complexity_metrics?: ComplexityMetrics;
+  top_complex_components?: any[];
+}
+
+// ============================================
+// Frontend-Expected Complexity Response Types
+// ============================================
+
 export interface ComplexitySummary {
   average_simplified_score: number;
   median_simplified_score: number;
@@ -1813,15 +1858,93 @@ class A2AClient {
   }
 
   /**
+   * Transform raw backend complexity response to frontend-expected format
+   */
+  private transformComplexityResponse(raw: GetComplexityAnalysisRawResponse): GetComplexityAnalysisResponse {
+    if (!raw.success) {
+      return {
+        success: false,
+        timestamp: raw.timestamp,
+        execution_time_ms: raw.execution_time_ms,
+        error: raw.error,
+        repository: raw.repository,
+      };
+    }
+
+    if (!raw.complexity_metrics) {
+      return {
+        success: false,
+        timestamp: raw.timestamp,
+        execution_time_ms: raw.execution_time_ms,
+        error: 'No complexity metrics in response',
+        repository: raw.repository,
+      };
+    }
+
+    const metrics = raw.complexity_metrics;
+
+    // Transform to frontend-expected format
+    return {
+      success: true,
+      timestamp: raw.timestamp,
+      execution_time_ms: raw.execution_time_ms,
+      repository: raw.repository,
+      summary: {
+        // Simplified McCabe
+        average_simplified_score: metrics.simple.average,
+        median_simplified_score: metrics.simple.median,
+        max_simplified_score: metrics.simple.max,
+        weighted_score: metrics.simple.weighted_average,
+        // Full McCabe
+        average_full_mccabe: metrics.mccabe.average,
+        median_full_mccabe: metrics.mccabe.median,
+        max_full_mccabe: metrics.mccabe.max,
+        // Cognitive
+        average_cognitive: metrics.cognitive.average,
+        median_cognitive: metrics.cognitive.median,
+        max_cognitive: metrics.cognitive.max,
+        // Grade
+        overall_grade: metrics.grade,
+      },
+      distribution: [
+        {
+          level: 'low',
+          count: metrics.simple.distribution.LOW,
+          percentage: metrics.component_count > 0 ? (metrics.simple.distribution.LOW / metrics.component_count) * 100 : 0,
+        },
+        {
+          level: 'medium',
+          count: metrics.simple.distribution.MEDIUM,
+          percentage: metrics.component_count > 0 ? (metrics.simple.distribution.MEDIUM / metrics.component_count) * 100 : 0,
+        },
+        {
+          level: 'high',
+          count: metrics.simple.distribution.HIGH,
+          percentage: metrics.component_count > 0 ? (metrics.simple.distribution.HIGH / metrics.component_count) * 100 : 0,
+        },
+        {
+          level: 'critical',
+          count: metrics.simple.distribution.CRITICAL,
+          percentage: metrics.component_count > 0 ? (metrics.simple.distribution.CRITICAL / metrics.component_count) * 100 : 0,
+        },
+      ],
+      components: [],
+      total_components: metrics.component_count,
+      stale_analysis: metrics.staleness_days > 0,
+      days_since_analysis: metrics.staleness_days,
+    };
+  }
+
+  /**
    * Get complexity analysis details for a repository
    * Only works after analyzeRepositoryComplexity has been called
    */
   async getComplexityAnalysis(repository: string): Promise<GetComplexityAnalysisResponse> {
-    const response = await this.client.post<GetComplexityAnalysisResponse>('/a2a/execute', {
+    const response = await this.client.post<GetComplexityAnalysisRawResponse>('/a2a/execute', {
       skill_id: 'get_repository_complexity_details',
       input: { repository },
     });
-    return response.data;
+    return this.transformComplexityResponse(response.data);
   }
 
   /**
