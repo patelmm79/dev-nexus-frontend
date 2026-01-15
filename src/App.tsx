@@ -12,6 +12,7 @@ import Agents from './pages/Agents';
 import Compliance from './pages/Compliance';
 import Components from './pages/Components';
 import Analytics from './pages/Analytics';
+import ComplexityDashboard from './pages/complexity/ComplexityDashboard';
 import { a2aClient } from './services/a2aClient';
 
 const theme = createTheme({
@@ -68,6 +69,7 @@ function App() {
           <Route path="components" element={<Components />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="analytics/dependencies" element={<Analytics />} />
+          <Route path="complexity/:repository" element={<ComplexityDashboard />} />
           <Route path="configuration" element={<Configuration />} />
           <Route path="deployment" element={<Deployment />} />
           <Route path="agents" element={<Agents />} />

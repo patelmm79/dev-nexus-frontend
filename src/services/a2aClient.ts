@@ -321,6 +321,72 @@ export interface ListComponentsResponse {
 }
 
 // ============================================
+// Complexity Analysis Types
+// ============================================
+
+export interface ComplexityMetric {
+  simplified_mccabe: {
+    grade: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+    score: number;
+    description: string;
+  };
+  full_mccabe: number;
+  cognitive_complexity: number;
+  level: 'low' | 'medium' | 'high' | 'critical';
+}
+
+export interface ComponentComplexity {
+  component_name: string;
+  component_type: string;
+  repository: string;
+  files: string[];
+  lines_of_code: number;
+  complexity: ComplexityMetric;
+  last_analyzed: string;
+}
+
+export interface ComplexityDistribution {
+  level: 'low' | 'medium' | 'high' | 'critical';
+  count: number;
+  percentage: number;
+}
+
+export interface ComplexitySummary {
+  average_simplified_score: number;
+  median_simplified_score: number;
+  max_simplified_score: number;
+  weighted_score: number;
+  average_full_mccabe: number;
+  median_full_mccabe: number;
+  max_full_mccabe: number;
+  average_cognitive: number;
+  median_cognitive: number;
+  max_cognitive: number;
+  overall_grade: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+}
+
+export interface GetComplexityAnalysisResponse {
+  success: boolean;
+  timestamp: string;
+  execution_time_ms: number;
+  repository: string;
+  summary: ComplexitySummary;
+  distribution: ComplexityDistribution[];
+  components: ComponentComplexity[];
+  total_components: number;
+  stale_analysis: boolean;
+  days_since_analysis?: number;
+}
+
+export interface TriggerComplexityAnalysisResponse {
+  success: boolean;
+  timestamp: string;
+  execution_time_ms: number;
+  repository: string;
+  message: string;
+}
+
+// ============================================
 // Component Sensibility Types
 // ============================================
 
@@ -1731,6 +1797,28 @@ class A2AClient {
       return response.metadata;
     }
     return {};
+  }
+
+  /**
+   * Get complexity analysis for a repository
+   */
+  async getComplexityAnalysis(repository: string): Promise<GetComplexityAnalysisResponse> {
+    const response = await this.client.post<GetComplexityAnalysisResponse>('/a2a/execute', {
+      skill_id: 'get_complexity_analysis',
+      input: { repository },
+    });
+    return response.data;
+  }
+
+  /**
+   * Trigger new complexity analysis for a repository
+   */
+  async triggerComplexityAnalysis(repository: string): Promise<TriggerComplexityAnalysisResponse> {
+    const response = await this.client.post<TriggerComplexityAnalysisResponse>('/a2a/execute', {
+      skill_id: 'trigger_complexity_analysis',
+      input: { repository },
+    });
+    return response.data;
   }
 
   /**

@@ -1,9 +1,11 @@
 import { Typography, Box, Card, CardContent, Chip, CircularProgress, Alert, Button } from '@mui/material';
 import { Folder, AccessTime, Search } from '@mui/icons-material';
 import { useRepositories, useScanComponents, useListComponents } from '../hooks/usePatterns';
+import { useComplexityAnalysis } from '../hooks/useComplexityMetrics';
 import { formatDistanceToNow } from 'date-fns';
 import { useState } from 'react';
 import { ScanRepositoryComponentsResponse, Repository } from '../services/a2aClient';
+import ComplexityBadge from '../components/complexity/ComplexityBadge';
 
 interface ScanResult {
   repository: string;
@@ -20,6 +22,7 @@ interface RepositoryCardProps {
 
 function RepositoryCard({ repo, scanResult, onScan }: RepositoryCardProps) {
   const { data: componentsData } = useListComponents(repo.name);
+  const { data: complexityData, isLoading: complexityLoading } = useComplexityAnalysis(repo.name);
   const componentCount = componentsData?.total_components ?? scanResult?.result?.components_found ?? 0;
 
   return (
@@ -45,6 +48,15 @@ function RepositoryCard({ repo, scanResult, onScan }: RepositoryCardProps) {
             color="secondary"
             variant="outlined"
           />
+          {complexityLoading ? (
+            <Chip label="Analyzing..." size="small" variant="outlined" />
+          ) : complexityData?.success ? (
+            <ComplexityBadge
+              grade={complexityData.summary?.overall_grade || 'F'}
+              showStale={true}
+              isStale={complexityData.stale_analysis}
+            />
+          ) : null}
           <Chip
             icon={<AccessTime />}
             label={formatDistanceToNow(new Date(repo.last_updated), { addSuffix: true })}
