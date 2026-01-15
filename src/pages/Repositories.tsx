@@ -227,7 +227,21 @@ export default function Repositories() {
     try {
       // First, scan components if not already scanned
       if (!scanResults[repositoryName]?.result?.success) {
-        await scanMutation.mutateAsync(repositoryName);
+        try {
+          const scanResult = await scanMutation.mutateAsync(repositoryName);
+          // Update local scan results state
+          setScanResults((prev) => ({
+            ...prev,
+            [repositoryName]: {
+              repository: repositoryName,
+              result: scanResult,
+              isLoading: false,
+            },
+          }));
+        } catch (scanErr) {
+          console.error('Scan failed before complexity analysis:', scanErr);
+          // Continue anyway - complexity analysis might still work
+        }
       }
 
       // Then, trigger complexity analysis calculation
