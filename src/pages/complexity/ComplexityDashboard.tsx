@@ -23,7 +23,7 @@ import {
   Tooltip,
 } from '@mui/material';
 import { Refresh as RefreshIcon } from '@mui/icons-material';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useRepositories } from '../../hooks/usePatterns';
 import { useComplexityAnalysis, useTriggerComplexityAnalysis } from '../../hooks/useComplexityMetrics';
 import ComplexityBadge from '../../components/complexity/ComplexityBadge';
@@ -36,6 +36,7 @@ interface TableParams {
 }
 
 export default function ComplexityDashboard() {
+  const navigate = useNavigate();
   const { repository: encodedRepository } = useParams<{ repository: string }>();
   const repository = encodedRepository ? decodeURIComponent(encodedRepository) : '';
   const { data: repositoriesData } = useRepositories();
@@ -148,11 +149,25 @@ export default function ComplexityDashboard() {
 
   if (error) {
     console.error('Complexity analysis error:', error);
+    const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+    const isNoDataError = errorMessage.includes('No complexity data');
+
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="error">
-          Failed to load complexity analysis: {error instanceof Error ? error.message : JSON.stringify(error)}
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Failed to load complexity analysis: {errorMessage}
         </Alert>
+        {isNoDataError && (
+          <Box sx={{ mb: 2 }}>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              No complexity analysis data found for <strong>{repository}</strong>. Please run the "Analyze" button on the
+              repository card to calculate complexity metrics first.
+            </Alert>
+            <Button variant="contained" onClick={() => navigate('/repositories')}>
+              Back to Repositories
+            </Button>
+          </Box>
+        )}
       </Container>
     );
   }
