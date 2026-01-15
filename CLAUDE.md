@@ -404,6 +404,56 @@ If you see "CORS policy: No 'Access-Control-Allow-Origin'" errors:
 
 **Pattern:** Always validate responses before using. Use `a2aClient.isValidResponse()` to catch malformed responses early.
 
+### Error Handling & Diagnostics Must Be Built-In (Phase 13+)
+**Problem:** Black screens when API fails; no visibility into what went wrong. Developers resort to console.log debugging after-the-fact.
+
+**Root Cause:** Error handling was added reactively after failures, not proactively as a foundation layer.
+
+**Example Failures:**
+- Complexity analysis feature called non-existent `get_complexity_analysis` skill
+- Backend skill `get_repository_complexity_details` had a StandardSkillResponse initialization bug
+- Users saw blank screens instead of actionable error messages
+
+**Solution:** Establish error handling as a first-class concern, not a patch:
+1. **Create diagnostic utilities** (`src/utils/apiDiagnostics.ts`):
+   - `logApiResponse()` - Log all responses with context
+   - `validateApiResponse()` - Check StandardSkillResponse structure
+   - `extractErrorMessage()` - User-friendly error text
+   - `createApiErrorReport()` - Detailed diagnostics for debugging
+
+2. **Create diagnostic hooks** (`src/hooks/useApiWithDiagnostics.ts`):
+   - Wraps `useQuery` with automatic logging, validation, error extraction
+   - Applies diagnostics to every API call consistently
+   - No more manual error handling in each component
+
+3. **Apply to all data-fetching hooks**:
+   ```typescript
+   // OLD (error-prone)
+   const { data, error } = useQuery({
+     queryKey: ['skill', params],
+     queryFn: () => a2aClient.someSkill(params),
+   });
+
+   // NEW (with diagnostics)
+   const { data, error } = useApiWithDiagnostics(
+     ['skill', params],
+     () => a2aClient.someSkill(params),
+     'skill_id'
+   );
+   ```
+
+4. **Ensure visible error states**:
+   - Every page checks for `isLoading`, `error`, and `!data` states
+   - Users always see a message, never a blank screen
+   - Error messages include backend details (see ComplexityDashboard for example)
+
+**Key Principle:** If an API call can fail (and they all can), the error path must be as fully implemented as the happy path. Error handling is not optional polish—it's part of the contract.
+
+**Future Tasks:**
+- Migrate all data-fetching hooks to use `useApiWithDiagnostics`
+- Add error boundaries for page-level failures
+- Create consistent error display patterns (Snackbar for transient, Alert for page-level)
+
 ## Backend Repository
 The backend for this frontend is at: https://github.com/patelmm79/dev-nexus
 
