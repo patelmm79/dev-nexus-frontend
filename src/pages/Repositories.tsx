@@ -23,7 +23,6 @@ interface RepositoryCardProps {
 }
 
 function RepositoryCard({ repo, scanResult, onScan, onAnalyzeComplexity }: RepositoryCardProps) {
-  const navigate = useNavigate();
   const { data: componentsData } = useListComponents(repo.name);
   const { data: complexityData, isLoading: complexityLoading } = useComplexityAnalysis(repo.name);
   const refreshComplexity = useTriggerComplexityAnalysis();
