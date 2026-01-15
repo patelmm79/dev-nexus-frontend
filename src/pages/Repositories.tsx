@@ -24,6 +24,7 @@ interface RepositoryCardProps {
 }
 
 function RepositoryCard({ repo, scanResult, onScan, onAnalyzeComplexity, isAnalyzing }: RepositoryCardProps) {
+  const navigate = useNavigate();
   const { data: componentsData } = useListComponents(repo.name);
   const { data: complexityData, isLoading: complexityLoading } = useComplexityAnalysis(repo.name);
   const refreshComplexity = useTriggerComplexityAnalysis();
@@ -36,6 +37,10 @@ function RepositoryCard({ repo, scanResult, onScan, onAnalyzeComplexity, isAnaly
       // Error is handled by toast notification from the mutation
       console.error('Failed to analyze complexity:', err);
     }
+  };
+
+  const handleViewComplexity = () => {
+    navigate(`/complexity/${encodeURIComponent(repo.name)}`);
   };
 
   const handleRefreshComplexity = async (e: React.MouseEvent) => {
@@ -75,11 +80,13 @@ function RepositoryCard({ repo, scanResult, onScan, onAnalyzeComplexity, isAnaly
           {complexityLoading ? (
             <Chip label="Analyzing..." size="small" variant="outlined" />
           ) : complexityData?.success ? (
-            <ComplexityBadge
-              grade={complexityData.summary?.overall_grade || 'F'}
-              showStale={true}
-              isStale={complexityData.stale_analysis}
-            />
+            <div onClick={handleViewComplexity} style={{ cursor: 'pointer' }}>
+              <ComplexityBadge
+                grade={complexityData.summary?.overall_grade || 'F'}
+                showStale={true}
+                isStale={complexityData.stale_analysis}
+              />
+            </div>
           ) : null}
           <Chip
             icon={<AccessTime />}
@@ -125,16 +132,26 @@ function RepositoryCard({ repo, scanResult, onScan, onAnalyzeComplexity, isAnaly
             </Button>
           </Box>
           {complexityData?.success && (
-            <Button
-              variant="text"
-              size="small"
-              startIcon={isRefreshing ? <CircularProgress size={16} /> : <Refresh />}
-              onClick={handleRefreshComplexity}
-              disabled={isRefreshing}
-              fullWidth
-            >
-              {isRefreshing ? 'Refreshing...' : 'Refresh Analysis'}
-            </Button>
+            <>
+              <Button
+                variant="text"
+                size="small"
+                onClick={handleViewComplexity}
+                fullWidth
+              >
+                View Complexity
+              </Button>
+              <Button
+                variant="text"
+                size="small"
+                startIcon={isRefreshing ? <CircularProgress size={16} /> : <Refresh />}
+                onClick={handleRefreshComplexity}
+                disabled={isRefreshing}
+                fullWidth
+              >
+                {isRefreshing ? 'Refreshing...' : 'Refresh Analysis'}
+              </Button>
+            </>
           )}
         </Box>
 
