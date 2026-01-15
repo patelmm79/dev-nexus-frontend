@@ -139,26 +139,39 @@ export default function ComplexityDashboard() {
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Container maxWidth="lg" sx={{ py: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
         <CircularProgress />
-      </Box>
+      </Container>
     );
   }
 
   if (error) {
+    console.error('Complexity analysis error:', error);
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert severity="error">
-          Failed to load complexity analysis: {error instanceof Error ? error.message : 'Unknown error'}
+          Failed to load complexity analysis: {error instanceof Error ? error.message : JSON.stringify(error)}
         </Alert>
       </Container>
     );
   }
 
-  if (!complexityData?.success) {
+  if (!complexityData) {
+    console.warn('Complexity data is undefined after query completed');
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="error">Complexity analysis failed. Please try again.</Alert>
+        <Alert severity="warning">No data returned from complexity analysis. Please try again.</Alert>
+      </Container>
+    );
+  }
+
+  if (!complexityData.success) {
+    console.error('Complexity analysis failed:', complexityData);
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert severity="error">
+          Complexity analysis failed: {complexityData.error || 'Unknown error. Check console for details.'}
+        </Alert>
       </Container>
     );
   }

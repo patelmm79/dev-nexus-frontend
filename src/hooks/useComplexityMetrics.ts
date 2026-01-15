@@ -13,7 +13,9 @@ export function useComplexityAnalysis(repository: string) {
 
       // Defensive check for response structure
       if (!result.success) {
-        throw new Error('Failed to fetch complexity analysis');
+        const errorMsg = result.error || 'Unknown error from backend';
+        console.error('Backend returned failure:', result);
+        throw new Error(`Complexity analysis failed: ${errorMsg}`);
       }
 
       return result;
