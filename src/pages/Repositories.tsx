@@ -1,9 +1,10 @@
 import { Typography, Box, Card, CardContent, Chip, CircularProgress, Alert, Button } from '@mui/material';
-import { Folder, AccessTime, Search } from '@mui/icons-material';
+import { Folder, AccessTime, Search, Analytics, Refresh } from '@mui/icons-material';
 import { useRepositories, useScanComponents, useListComponents } from '../hooks/usePatterns';
-import { useComplexityAnalysis } from '../hooks/useComplexityMetrics';
+import { useComplexityAnalysis, useTriggerComplexityAnalysis } from '../hooks/useComplexityMetrics';
 import { formatDistanceToNow } from 'date-fns';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ScanRepositoryComponentsResponse, Repository } from '../services/a2aClient';
 import ComplexityBadge from '../components/complexity/ComplexityBadge';
 
@@ -18,11 +19,25 @@ interface RepositoryCardProps {
   repo: Repository;
   scanResult: ScanResult | undefined;
   onScan: (repositoryName: string) => Promise<void>;
+  onAnalyzeComplexity: (repositoryName: string) => void;
 }
 
-function RepositoryCard({ repo, scanResult, onScan }: RepositoryCardProps) {
+function RepositoryCard({ repo, scanResult, onScan, onAnalyzeComplexity }: RepositoryCardProps) {
+  const navigate = useNavigate();
   const { data: componentsData } = useListComponents(repo.name);
   const { data: complexityData, isLoading: complexityLoading } = useComplexityAnalysis(repo.name);
+  const refreshComplexity = useTriggerComplexityAnalysis();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefreshComplexity = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsRefreshing(true);
+    try {
+      refreshComplexity.mutate(repo.name);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
   const componentCount = componentsData?.total_components ?? scanResult?.result?.components_found ?? 0;
 
   return (
@@ -77,17 +92,41 @@ function RepositoryCard({ repo, scanResult, onScan }: RepositoryCardProps) {
           </Box>
         ) : null}
 
-        <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={scanResult?.isLoading ? <CircularProgress size={16} /> : <Search />}
-            onClick={() => onScan(repo.name)}
-            disabled={scanResult?.isLoading}
-            fullWidth
-          >
-            {scanResult?.isLoading ? 'Scanning...' : 'Scan for Components'}
-          </Button>
+        <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider', display: 'flex', gap: 1, flexDirection: 'column' }}>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={scanResult?.isLoading ? <CircularProgress size={16} /> : <Search />}
+              onClick={() => onScan(repo.name)}
+              disabled={scanResult?.isLoading}
+              sx={{ flex: 1 }}
+            >
+              {scanResult?.isLoading ? 'Scanning...' : 'Scan'}
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={complexityLoading || isRefreshing ? <CircularProgress size={16} /> : <Analytics />}
+              onClick={() => onAnalyzeComplexity(repo.name)}
+              disabled={complexityLoading || isRefreshing}
+              sx={{ flex: 1 }}
+            >
+              {complexityLoading || isRefreshing ? 'Loading...' : 'Analyze'}
+            </Button>
+          </Box>
+          {complexityData?.success && (
+            <Button
+              variant="text"
+              size="small"
+              startIcon={isRefreshing ? <CircularProgress size={16} /> : <Refresh />}
+              onClick={handleRefreshComplexity}
+              disabled={isRefreshing}
+              fullWidth
+            >
+              {isRefreshing ? 'Refreshing...' : 'Refresh Analysis'}
+            </Button>
+          )}
         </Box>
 
         {scanResult?.result && scanResult.result.success && (
@@ -136,6 +175,7 @@ function RepositoryCard({ repo, scanResult, onScan }: RepositoryCardProps) {
 }
 
 export default function Repositories() {
+  const navigate = useNavigate();
   const { data, isLoading, isError, error } = useRepositories();
   const scanMutation = useScanComponents();
   const [scanResults, setScanResults] = useState<Record<string, ScanResult>>({});
@@ -171,6 +211,10 @@ export default function Repositories() {
     }
   };
 
+  const handleAnalyzeComplexity = (repositoryName: string) => {
+    navigate(`/complexity/${repositoryName}`);
+  };
+
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -203,6 +247,7 @@ export default function Repositories() {
             repo={repo}
             scanResult={scanResults[repo.name]}
             onScan={handleScanRepository}
+            onAnalyzeComplexity={handleAnalyzeComplexity}
           />
         ))}
       </Box>
