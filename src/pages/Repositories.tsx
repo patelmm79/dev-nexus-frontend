@@ -211,7 +211,7 @@ export default function Repositories() {
   };
 
   const handleAnalyzeComplexity = (repositoryName: string) => {
-    navigate(`/complexity/${repositoryName}`);
+    navigate(`/complexity/${encodeURIComponent(repositoryName)}`);
   };
 
   if (isLoading) {

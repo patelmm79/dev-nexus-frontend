@@ -36,7 +36,8 @@ interface TableParams {
 }
 
 export default function ComplexityDashboard() {
-  const { repository } = useParams<{ repository: string }>();
+  const { repository: encodedRepository } = useParams<{ repository: string }>();
+  const repository = encodedRepository ? decodeURIComponent(encodedRepository) : '';
   const { data: repositoriesData } = useRepositories();
   const { data: complexityData, isLoading, error } = useComplexityAnalysis(repository || '');
   const triggerAnalysis = useTriggerComplexityAnalysis();
