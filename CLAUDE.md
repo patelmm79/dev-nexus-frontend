@@ -140,16 +140,30 @@ export function usePatterns(repository: string, keywords?: string[]) {
 }
 ```
 
-### Error Handling
-- API errors are caught by axios interceptors
-- User-facing errors displayed via react-hot-toast
-- Loading states shown with MUI CircularProgress or Skeleton components
-- Error boundaries should wrap page-level components
-- **Phase 12:** Structured error handling with metadata extraction
-  - Use `handleSkillError()` to convert responses to user-friendly errors
-  - Check `isRetryable()` to determine if error can be retried
-  - Access error metadata for debugging: `error.errorType`, `error.errorCode`
-  - Use `getRetryDelay()` for exponential backoff logic
+### Error Handling (Phase 13+)
+**All API error handling is automatic via `useApiWithDiagnostics`.**
+
+**What happens automatically:**
+- All responses logged to console with `logApiResponse(skillId, response)`
+- Response structure validated with `validateApiResponse()`
+- User-friendly error messages extracted with `extractErrorMessage()`
+- Full diagnostic reports available for debugging
+
+**What you must do in components:**
+- **Check all states** before rendering data:
+  1. `if (isLoading)` → show spinner
+  2. `if (error)` → show error alert (automatically has message)
+  3. `if (!data)` → show "no data" warning
+  4. `if (!data.success)` → show error from response
+  5. Only then access `data.field`
+- **Never skip error state checks** - this causes blank screens
+- Display errors via `<Alert severity="error">{error.message}</Alert>` or toast
+
+**For UI feedback:**
+- Use `react-hot-toast` for transient messages (success, errors from mutations)
+- Use MUI `<Alert>` for page-level errors
+- Use `<CircularProgress>` for loading states
+- Error boundaries wrap page-level components (not data-fetch errors)
 
 ### Enum/Union Type Lookups from APIs
 When working with TypeScript union types that come from API responses, **always provide fallbacks**:
@@ -168,56 +182,47 @@ return config.bgColor; // Always safe
 ```
 **Why:** TypeScript union types do NOT guarantee the API will only return those values. The backend may add new enum values, have version mismatches, or return unexpected data. Always expect the API to violate its documented contract and handle it gracefully.
 
-### Phase 12: Response Validation & Error Handling
-All A2A skill responses follow the StandardSkillResponse format with automatic validation:
+### Phase 13+: StandardSkillResponse with Built-In Diagnostics
+All A2A skill responses follow the `StandardSkillResponse` format with automatic validation and diagnostics:
 
-**Using Phase 12 utilities in components:**
+**Response structure:**
 ```typescript
-import { useSkillExecution } from '../hooks/useSkillExecutionPhase12'
-import { useExecutionMetrics } from '../hooks/useExecutionMetrics'
-import { handleSkillError } from '../utils/skillErrorHandler'
-
-// Execute skill with automatic validation and metrics
-const { data, error, executionTime, execute, isSuccess } = useSkillExecution()
-const { recordMetric, getMetrics } = useExecutionMetrics()
-
-const handleSearch = async (keywords: string[]) => {
-  const response = await execute('query_patterns', { keywords })
-
-  if (response) {
-    recordMetric(response, 'query_patterns')
-
-    if (isSuccess) {
-      // Access skill-specific fields from standardized response
-      const patterns = response.patterns // Type-safe access
-      console.log(`Executed in ${executionTime}ms`)
-    }
-  }
-}
-
-// Handle errors with user-friendly messages
-if (error && data) {
-  const structuredError = handleSkillError(data, 'query_patterns')
-  showUserMessage(structuredError.userMessage)  // User-friendly
-  logError(structuredError)  // Log for debugging
-
-  if (isRetryable(structuredError)) {
-    setTimeout(() => handleSearch(keywords), getRetryDelay(structuredError))
-  }
+interface StandardSkillResponse {
+  success: boolean;           // Always present
+  timestamp: string;          // ISO 8601 format, always present
+  execution_time_ms: number;  // Always present
+  error?: string;             // Only present when success=false
+  [key: string]: any;         // Skill-specific fields
 }
 ```
 
-**Response Validation Pattern:**
-- All responses checked for: `success` (boolean), `timestamp` (ISO 8601), `execution_time_ms` (number)
-- Use `a2aClient.isValidResponse()` to validate response structure
-- Invalid responses fail gracefully with console warnings
-- Error responses must have `error` field when `success=false`
+**Built-in automatic handling via `useApiWithDiagnostics`:**
+1. **Response logging** - All responses logged to console with skill ID and context
+2. **Structure validation** - Checks for required `success`, `timestamp`, `execution_time_ms` fields
+3. **Error extraction** - Converts backend errors to user-friendly messages
+4. **Diagnostic reports** - Full response details available in console for debugging
 
-**Error Metadata:**
-- Backend provides error details in response metadata: `error_type`, `error_code`, `error_subtype`
-- Frontend maps error types to user-friendly messages
-- Severity levels: INFO, WARNING, ERROR, CRITICAL
-- Retry logic with exponential backoff for retryable errors
+**What you do in components:**
+```typescript
+import { useApiWithDiagnostics } from '../hooks/useApiWithDiagnostics'
+
+const { data, error, isLoading } = useApiWithDiagnostics(
+  ['query_patterns', keywords],
+  () => a2aClient.queryPatterns(keywords),
+  'query_patterns'
+);
+
+// Handle all states before accessing data
+if (isLoading) return <CircularProgress />;
+if (error) return <Alert severity="error">{error.message}</Alert>;
+if (!data) return <Alert severity="warning">No data</Alert>;
+if (!data.success) return <Alert severity="error">{data.error}</Alert>;
+
+// Now safe to use data fields
+return <div>{data.patterns}</div>;
+```
+
+**No manual error handling needed** - diagnostics and validation happen automatically in the hook.
 
 ### Environment Configuration
 Environment variables are accessed via Vite's `import.meta.env`:
@@ -229,38 +234,69 @@ Environment variables are accessed via Vite's `import.meta.env`:
 ## Common Tasks
 
 ### Adding a New A2A Skill
-1. Add TypeScript types to `src/services/a2aClient.ts`
-2. Add method to `A2AClient` class
-3. Create React Query hook in `src/hooks/` OR use `useSkillExecution` for direct calls
-4. Use hook in component with proper loading/error states
-5. **Phase 12:** All responses automatically validated and can use error handling utilities
+**IMPORTANT:** Error handling and diagnostics are NOT optional. They are part of the contract. Follow all steps.
 
-### Handling Skill Errors with Phase 12
-When a skill execution fails:
-```typescript
-import { useSkillExecution } from '../hooks/useSkillExecutionPhase12'
-import { handleSkillError, isRetryable, getRetryDelay } from '../utils/skillErrorHandler'
+1. **Add TypeScript types** to `src/services/a2aClient.ts`
+   - Define request and response interfaces
+   - Response interface must include optional `error?: string` field
+   - All success-only fields should be optional (only available when `success=true`)
 
-const { data, error, execute } = useSkillExecution()
+2. **Add method to `A2AClient` class**
+   - Follow existing patterns for parameter names and input/output types
+   - No error handling at this layer—just wrap the API call
 
-const response = await execute('query_patterns', { keywords })
+3. **Create React Query hook with diagnostics**
+   - **ALWAYS use `useApiWithDiagnostics`** (not `useQuery` directly)
+   - This provides automatic logging, validation, and error extraction
+   ```typescript
+   import { useApiWithDiagnostics } from '../hooks/useApiWithDiagnostics'
 
-if (error && data && !data.success) {
-  const structuredError = handleSkillError(data, 'query_patterns')
+   export function useMySkill(param: string) {
+     return useApiWithDiagnostics(
+       ['mySkill', param],
+       () => a2aClient.mySkill(param),
+       'my_skill_id',
+       {
+         staleTime: 5 * 60 * 1000, // 5 minutes
+         retry: 1,
+       }
+     );
+   }
+   ```
 
-  // Show user-friendly message
-  toast.error(structuredError.userMessage)
+4. **Use hook in component with complete error handling**
+   - Check `isLoading` → show spinner
+   - Check `error` → show error alert with message
+   - Check `!data` → show "no data" warning
+   - Check `!data.success` → show error from response
+   - Only then access data fields
 
-  // Log for debugging
-  console.error(structuredError)
+   **Example:**
+   ```typescript
+   const { data, isLoading, error } = useMySkill(param);
 
-  // Retry if appropriate
-  if (isRetryable(structuredError)) {
-    const delay = getRetryDelay(structuredError)
-    setTimeout(() => execute('query_patterns', { keywords }), delay)
-  }
-}
-```
+   if (isLoading) return <CircularProgress />;
+   if (error) return <Alert severity="error">{error.message}</Alert>;
+   if (!data) return <Alert severity="warning">No data returned</Alert>;
+   if (!data.success) return <Alert severity="error">{data.error}</Alert>;
+
+   // NOW safe to use data.myField
+   return <div>{data.myField}</div>;
+   ```
+
+5. **Test error path before merging**
+   - Verify backend skill with intentionally broken input
+   - Verify error message displays (not blank screen)
+   - Check browser console for diagnostic logs from `logApiResponse()`
+
+### Handling Skill Errors
+Errors are handled automatically by `useApiWithDiagnostics`:
+- All responses logged with `logApiResponse(skillId, response)`
+- Structure validated with `validateApiResponse()`
+- Error messages extracted with `extractErrorMessage()`
+- Full diagnostic report available in browser console
+
+No additional error handling code needed in components beyond the state checks above.
 
 ### Adding a New Page
 1. Create page component in `src/pages/`
