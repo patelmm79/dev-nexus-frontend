@@ -369,12 +369,13 @@ export interface GetComplexityAnalysisResponse {
   success: boolean;
   timestamp: string;
   execution_time_ms: number;
+  error?: string; // Present when success=false
   repository: string;
-  summary: ComplexitySummary;
-  distribution: ComplexityDistribution[];
-  components: ComponentComplexity[];
-  total_components: number;
-  stale_analysis: boolean;
+  summary?: ComplexitySummary;
+  distribution?: ComplexityDistribution[];
+  components?: ComponentComplexity[];
+  total_components?: number;
+  stale_analysis?: boolean;
   days_since_analysis?: number;
 }
 
