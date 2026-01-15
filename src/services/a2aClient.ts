@@ -1801,7 +1801,20 @@ class A2AClient {
   }
 
   /**
+   * Analyze and calculate complexity metrics for a repository
+   * This triggers the calculation process (must run before retrieving results)
+   */
+  async analyzeRepositoryComplexity(repository: string): Promise<StandardSkillResponse> {
+    const response = await this.client.post<StandardSkillResponse>('/a2a/execute', {
+      skill_id: 'analyze_repository_complexity',
+      input: { repository },
+    });
+    return response.data;
+  }
+
+  /**
    * Get complexity analysis details for a repository
+   * Only works after analyzeRepositoryComplexity has been called
    */
   async getComplexityAnalysis(repository: string): Promise<GetComplexityAnalysisResponse> {
     const response = await this.client.post<GetComplexityAnalysisResponse>('/a2a/execute', {

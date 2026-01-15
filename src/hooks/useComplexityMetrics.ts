@@ -28,6 +28,26 @@ export function useComplexityAnalysis(repository: string) {
 }
 
 /**
+ * Trigger complexity analysis calculation for a repository
+ * Must be called before retrieving results with useComplexityAnalysis
+ */
+export function useAnalyzeComplexity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (repository: string) => a2aClient.analyzeRepositoryComplexity(repository),
+    onSuccess: async (_, repository) => {
+      // Invalidate cache so next fetch gets fresh data
+      await queryClient.invalidateQueries({ queryKey: ['complexityAnalysis', repository] });
+      toast.success('Complexity analysis started. Loading results...');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to analyze complexity: ${error.message}`);
+    },
+  });
+}
+
+/**
  * Refresh complexity analysis by invalidating cache and refetching
  */
 export function useTriggerComplexityAnalysis() {

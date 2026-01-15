@@ -1,7 +1,7 @@
 import { Typography, Box, Card, CardContent, Chip, CircularProgress, Alert, Button } from '@mui/material';
 import { Folder, AccessTime, Search, Analytics, Refresh } from '@mui/icons-material';
 import { useRepositories, useScanComponents, useListComponents } from '../hooks/usePatterns';
-import { useComplexityAnalysis, useTriggerComplexityAnalysis } from '../hooks/useComplexityMetrics';
+import { useComplexityAnalysis, useAnalyzeComplexity, useTriggerComplexityAnalysis } from '../hooks/useComplexityMetrics';
 import { formatDistanceToNow } from 'date-fns';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -19,14 +19,24 @@ interface RepositoryCardProps {
   repo: Repository;
   scanResult: ScanResult | undefined;
   onScan: (repositoryName: string) => Promise<void>;
-  onAnalyzeComplexity: (repositoryName: string) => void;
+  onAnalyzeComplexity: (repositoryName: string) => Promise<void>;
+  isAnalyzing?: boolean;
 }
 
-function RepositoryCard({ repo, scanResult, onScan, onAnalyzeComplexity }: RepositoryCardProps) {
+function RepositoryCard({ repo, scanResult, onScan, onAnalyzeComplexity, isAnalyzing }: RepositoryCardProps) {
   const { data: componentsData } = useListComponents(repo.name);
   const { data: complexityData, isLoading: complexityLoading } = useComplexityAnalysis(repo.name);
   const refreshComplexity = useTriggerComplexityAnalysis();
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleAnalyzeClick = async () => {
+    try {
+      await onAnalyzeComplexity(repo.name);
+    } catch (err) {
+      // Error is handled by toast notification from the mutation
+      console.error('Failed to analyze complexity:', err);
+    }
+  };
 
   const handleRefreshComplexity = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -106,12 +116,12 @@ function RepositoryCard({ repo, scanResult, onScan, onAnalyzeComplexity }: Repos
             <Button
               variant="outlined"
               size="small"
-              startIcon={complexityLoading || isRefreshing ? <CircularProgress size={16} /> : <Analytics />}
-              onClick={() => onAnalyzeComplexity(repo.name)}
-              disabled={complexityLoading || isRefreshing}
+              startIcon={complexityLoading || isRefreshing || isAnalyzing ? <CircularProgress size={16} /> : <Analytics />}
+              onClick={handleAnalyzeClick}
+              disabled={complexityLoading || isRefreshing || isAnalyzing}
               sx={{ flex: 1 }}
             >
-              {complexityLoading || isRefreshing ? 'Loading...' : 'Analyze'}
+              {isAnalyzing ? 'Calculating...' : complexityLoading || isRefreshing ? 'Loading...' : 'Analyze'}
             </Button>
           </Box>
           {complexityData?.success && (
@@ -177,7 +187,9 @@ export default function Repositories() {
   const navigate = useNavigate();
   const { data, isLoading, isError, error } = useRepositories();
   const scanMutation = useScanComponents();
+  const analyzeMutation = useAnalyzeComplexity();
   const [scanResults, setScanResults] = useState<Record<string, ScanResult>>({});
+  const [analyzingRepository, setAnalyzingRepository] = useState<string | null>(null);
 
   const handleScanRepository = async (repositoryName: string) => {
     setScanResults((prev) => ({
@@ -210,8 +222,15 @@ export default function Repositories() {
     }
   };
 
-  const handleAnalyzeComplexity = (repositoryName: string) => {
-    navigate(`/complexity/${encodeURIComponent(repositoryName)}`);
+  const handleAnalyzeComplexity = async (repositoryName: string) => {
+    setAnalyzingRepository(repositoryName);
+    try {
+      await analyzeMutation.mutateAsync(repositoryName);
+      // Navigate to dashboard after calculation completes
+      navigate(`/complexity/${encodeURIComponent(repositoryName)}`);
+    } finally {
+      setAnalyzingRepository(null);
+    }
   };
 
   if (isLoading) {
@@ -247,6 +266,7 @@ export default function Repositories() {
             scanResult={scanResults[repo.name]}
             onScan={handleScanRepository}
             onAnalyzeComplexity={handleAnalyzeComplexity}
+            isAnalyzing={analyzingRepository === repo.name}
           />
         ))}
       </Box>
