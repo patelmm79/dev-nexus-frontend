@@ -1928,7 +1928,11 @@ class A2AClient {
           percentage: metrics.component_count > 0 ? (metrics.simple.distribution.CRITICAL / metrics.component_count) * 100 : 0,
         },
       ],
-      components: [],
+      // Include top complex components if available, otherwise empty array
+      // Backend may not always return individual component details
+      components: raw.top_complex_components && Array.isArray(raw.top_complex_components)
+        ? raw.top_complex_components
+        : [],
       total_components: metrics.component_count,
       stale_analysis: metrics.staleness_days > 0,
       days_since_analysis: metrics.staleness_days,

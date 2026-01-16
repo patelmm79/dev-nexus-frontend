@@ -360,7 +360,7 @@ export default function ComplexityDashboard() {
       {/* Components Table */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h6" gutterBottom>
-          Components by Complexity ({filteredComponents.length} total)
+          Components by Complexity ({complexityData.total_components || filteredComponents.length} total)
         </Typography>
 
         {/* Search */}
@@ -493,7 +493,11 @@ export default function ComplexityDashboard() {
             )}
           </>
         ) : (
-          <Alert severity="info">No components available</Alert>
+          <Alert severity="info">
+            {complexityData.total_components && complexityData.total_components > 0
+              ? `Component details are not available. The analysis found ${complexityData.total_components} components - see the distribution chart above for complexity level breakdown.`
+              : 'No components available'}
+          </Alert>
         )}
       </Box>
     </Container>
