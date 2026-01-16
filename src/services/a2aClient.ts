@@ -338,11 +338,11 @@ export interface ComplexityMetric {
 export interface ComponentComplexity {
   component_name: string;
   component_type: string;
-  repository: string;
-  files: string[];
-  lines_of_code: number;
+  repository?: string;
+  files?: string[];
+  lines_of_code?: number;
   complexity: ComplexityMetric;
-  last_analyzed: string;
+  last_analyzed?: string;
 }
 
 export interface ComplexityDistribution {
@@ -1846,6 +1846,68 @@ class A2AClient {
   }
 
   /**
+   * Convert complexity category to grade (A-F)
+   */
+  private getGradeFromComplexity(complexity: number): 'A' | 'B' | 'C' | 'D' | 'E' | 'F' {
+    if (complexity <= 5) return 'A';
+    if (complexity <= 10) return 'B';
+    if (complexity <= 20) return 'C';
+    if (complexity <= 30) return 'D';
+    if (complexity <= 50) return 'E';
+    return 'F';
+  }
+
+  /**
+   * Convert backend category to complexity level
+   */
+  private categoryToLevel(category: string): 'low' | 'medium' | 'high' | 'critical' {
+    switch ((category || '').toUpperCase()) {
+      case 'LOW':
+        return 'low';
+      case 'MEDIUM':
+        return 'medium';
+      case 'HIGH':
+        return 'high';
+      case 'CRITICAL':
+        return 'critical';
+      default:
+        return 'medium';
+    }
+  }
+
+  /**
+   * Transform backend component format to frontend format
+   */
+  private transformComponent(raw: any): ComponentComplexity {
+    const grade = this.getGradeFromComplexity(raw.complexity_simple || 0);
+    const gradeDescriptions: Record<string, string> = {
+      A: 'Low complexity',
+      B: 'Low-medium complexity',
+      C: 'Medium complexity',
+      D: 'Medium-high complexity',
+      E: 'High complexity',
+      F: 'Very high complexity',
+    };
+
+    return {
+      component_name: raw.name || 'Unknown Component',
+      component_type: 'Component',
+      files: raw.location ? [raw.location] : undefined,
+      lines_of_code: raw.lines_of_code,
+      complexity: {
+        simplified_mccabe: {
+          grade,
+          score: raw.complexity_simple || 0,
+          description: gradeDescriptions[grade],
+        },
+        full_mccabe: raw.complexity_mccabe || 0,
+        cognitive_complexity: raw.complexity_cognitive || 0,
+        level: this.categoryToLevel(raw.category_simple),
+      },
+    };
+  }
+
+  /**
    * Analyze and calculate complexity metrics for a repository
    * This triggers the calculation process (must run before retrieving results)
    */
@@ -1928,10 +1990,9 @@ class A2AClient {
           percentage: metrics.component_count > 0 ? (metrics.simple.distribution.CRITICAL / metrics.component_count) * 100 : 0,
         },
       ],
-      // Include top complex components if available, otherwise empty array
-      // Backend may not always return individual component details
+      // Transform top complex components from backend format to frontend format
       components: raw.top_complex_components && Array.isArray(raw.top_complex_components)
-        ? raw.top_complex_components
+        ? raw.top_complex_components.map((comp) => this.transformComponent(comp))
         : [],
       total_components: metrics.component_count,
       stale_analysis: metrics.staleness_days > 0,
