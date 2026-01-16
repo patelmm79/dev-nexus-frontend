@@ -1946,7 +1946,7 @@ class A2AClient {
   async getComplexityAnalysis(repository: string): Promise<GetComplexityAnalysisResponse> {
     const response = await this.client.post<GetComplexityAnalysisRawResponse>('/a2a/execute', {
       skill_id: 'get_repository_complexity_details',
-      input: { repository },
+      input: { repository, include_components: true },
     });
     return this.transformComplexityResponse(response.data);
   }
