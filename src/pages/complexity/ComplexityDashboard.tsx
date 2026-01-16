@@ -59,9 +59,12 @@ export default function ComplexityDashboard() {
     if (!Array.isArray(complexityData?.components)) return [];
 
     return complexityData.components
-      .filter((comp: any) =>
-        comp.component_name.toLowerCase().includes(tableParams.searchQuery.toLowerCase())
-      )
+      .filter((comp: any) => {
+        // Handle different possible field names for component name
+        const compName = comp.component_name || comp.name || '';
+        if (!compName) return false;
+        return String(compName).toLowerCase().includes(tableParams.searchQuery.toLowerCase());
+      })
       .sort((a: any, b: any) => {
         switch (tableParams.sortBy) {
           case 'cognitive':
